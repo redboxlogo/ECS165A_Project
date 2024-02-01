@@ -21,12 +21,8 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
-        try:
-            return self.table.delete(primary_key)
-        except Exception as e:
-            # Logs the error or handles it
-            print(f"Delete failed: {e}")
-            return False
+        pass
+    
     
     """
     # Insert a record with specified columns
@@ -34,20 +30,8 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        # Initializes schema_encoding as a string of '0's, one for each column
         schema_encoding = '0' * self.table.num_columns
-
-        # Updates the schema_encoding string based on the provided columns
-        schema_encoding = ''.join(['1' if columns[i] is not None else '0' for i in range(self.table.num_columns)])
-
-        try:
-            # Takes schema encoding and columns as arguments
-            self.table.insert(schema_encoding, columns)
-            return True
-        except Exception as e:
-            # Logs the error or handles it
-            print(f"Insert failed: {e}")
-            return False
+        pass
     
     """
     # Read matching record with specified search key
