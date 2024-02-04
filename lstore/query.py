@@ -14,7 +14,7 @@ class Query:
         pass
 
     
-     """
+    """
     # internal Method
     # Read a record with specified RID
     # Returns True upon succesful deletion
