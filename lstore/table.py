@@ -31,7 +31,7 @@ class Table:
         self.name = name
         self.key = key
         self.num_columns = num_columns
-        self.page_directory = {}
+        self.page_directory = {}                        #given a record key, it should return the page address/location
         self.base_page = []
         self.tail_page = []
         self.index = Index(self)
