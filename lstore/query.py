@@ -31,9 +31,6 @@ class Query:
         except KeyError:
             return False  # Primary key does not exist in the index.
 
-        if self.is_record_locked(RID):  # Assuming a method exists to check the lock status.
-            return False  # Record is locked due to 2PL.
-
         location = self.table.page_directory.get(RID)
         if location is None:
             return False  # Location not found, indicating record might not exist.
