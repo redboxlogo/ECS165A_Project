@@ -1,5 +1,6 @@
 from lstore.table import Table, Record
 from lstore.index import Index
+from lstore.page import Page
 
 
 class Query:
@@ -12,6 +13,7 @@ class Query:
     def __init__(self, table):
         self.table = table
         pass
+        
 
     
     """
@@ -48,11 +50,42 @@ class Query:
     # Return True upon succesful insertion
     # Returns False if insert fails for whatever reason
     """
+
+    # helper function to set Base record after insert retaining read-only properties of base page
+
+    def setBase(self, basePage, insertRecord):
+
+        try:
+            basePage.write(insertRecord)
+            return True
+        except:
+            print("Base setting failed")
+            return False 
+        
+# insert into both base and tail?
+
     def insert(self, *columns):
+
+        columns = list(columns)
+        RID = columns[0]                                            #temp assignment POSSIBLE CHANGE 
+        key = columns[0]                                            #temp assignment POSSIBLE CHANGE 
         schema_encoding = '0' * self.table.num_columns
+        newRecord = Record(RID, schema_encoding, key, columns)      #create a new Record() object from table.py
+        if (self.table.page_directory == {}):
+            newBase = Page(-1)                               #create a base page
+            self.setBase(newBase,newRecord)
+            self.table.base_page.append(newBase)
+            self.table.page_directory.update({newRecord.key:newBase})
+
+        else:
+            BaseP = self.table.base_page[-1]
+            print(newRecord.columns)
+            self.setBase(BaseP,newRecord)
+            self.table.page_directory.update({newRecord.key:BaseP})
+
         pass
         
-    
+
     """
     # Read matching record with specified search key
     # :param search_key: the value you want to search based on

@@ -5,27 +5,37 @@ from random import choice, randrange
 
 # Student Id and 4 grades
 db = Database()                                                             # create database object from db.py
-grades_table = db.create_table('Grades', 5, 0)                              # call create_table() to create table from db.py
+grades_table = db.create_table('Grades', 5, 0)                              # call create_table() to create table with name = Grades, columns = 5, index = 0 from db.py
 query = Query(grades_table)                                                 # call Query() to create Query object rom query.py 
 keys = []                                                                   # create local "keys" variable
 
-print(grades_table.name)
-print(grades_table.key)
-print(grades_table.num_columns)
+#print(grades_table.name)                                                   # "Grades"
+#print(grades_table.num_columns)                                            # 5
+#print(grades_table.key)                                                    # 0
 
+#print(query.table.index)                                                    # index object
+#print(query.table.key)
+#print(query.table.name)
+#print(query.table.num_columns)
+#print(query.table.page_directory)
 ################################################################################################################################
 
-insertFlag = False
+#using Query insert entry into "Grades" table
+
+insertFlag = True
 
 if(insertFlag == True):
     insert_time_0 = process_time()                                              #get time
     for i in range(0, 10000):                                                   #for loop for query inserts and key appends
-        query.insert(906659671 + i, 93, 0, 0, 0)                                #call insert() from query
+        query.insert(906659671 + i, 93, 0, 0, 0)                                #call insert(self, *columns) from query
         keys.append(906659671 + i)                                              #call append() from key
     insert_time_1 = process_time()                                              #get time
     print("Inserting 10k records took:  \t\t\t", insert_time_1 - insert_time_0) #print
 
 
+# print(query.table.page_directory)                                               #should page directory tell the physical address of page or record?
+# print(query.table.base_page[-1].record_list)
+# print(query.table.base_page[-1].data)
 
 
 
