@@ -5,37 +5,28 @@ class Page:
         #self.PageType = PageType                #True = tail page; False = base page
         self.directoryID = directoryID          #page identifier: positive for tail pages; negative for base
         self.num_records = 0
-        self.record_list = []                   #temporary until we figure out bytearray()
         self.data = bytearray(4096)
+        self.nextDataBlock = 0
 
     def has_capacity(self):
         pass
 
+    def fill_bytearray(self, byte_array, value_list, startloc):
+
+        start_index = startloc
+        last_index = min(start_index + len(value_list), len(byte_array))
+        for i in range(start_index, last_index):
+            byte_array[i] = value_list[i - start_index]  
+        return start_index, last_index
+
     def write(self, RecordObj):
+        if(self.nextDataBlock == 4096):
+            return False
         self.num_records += 1
-        # self.record_list.append(RecordObj)
-        # print(bytearray(RecordObj.columns))
+        RecordObj.pageLocStart, RecordObj.pageLocEnd = self.fill_bytearray(self.data, RecordObj.columns, self.nextDataBlock)
+        self.nextDataBlock = RecordObj.pageLocEnd
+        return True
 
-        # self.data = self.data.append(RecordObj.columns)
-        #print(self.data)
-
-        for i in range(len(RecordObj.columns)):
-            self.data[i] = 5#RecordObj.columns[i]
-            print(self.data[0:i])
-
-
-        for i in range(min(len(RecordObj.columns), len(self.data[i]))):
-            self.data[i] = RecordObj.columns[i]
-
-        pass
-
-    def fill_bytearray(byte_array, value_list):
-        
-        start_index = byte_array.find(b'\x00') + 1 if b'\x00' in byte_array else 0
-
-        for i in range(start_index, min(start_index + len(value_list), len(byte_array))):
-        
-            byte_array[i] = value_list[i - start_index]
 
     # # Create a bytearray with 4096 elements initialized to 0
     # my_bytearray = bytearray(4096)

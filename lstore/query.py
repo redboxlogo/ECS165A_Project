@@ -48,28 +48,29 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
         
-# insert into both base and tail?
-
     def insert(self, *columns):
 
         columns = list(columns)
         RID = columns[0]                                                #temp assignment POSSIBLE CHANGE 
         key = columns[0]                                                #temp assignment POSSIBLE CHANGE 
         schema_encoding = '0' * self.table.num_columns
+        columns.pop(0)                                                  #removing the key
         newRecord = Record(RID, schema_encoding, key, columns)          #create a new Record() object from table.py
         if (self.table.page_directory == {}):
-            newBase = Page(-1)                                          #create a base page
-            self.table.setBase(newBase,newRecord)
-            self.table.base_page.append(newBase)
-            self.table.page_directory.update({newRecord.key:newBase})
 
-        else:
-            BaseP = self.table.base_page[-1]
-            # print(newRecord.columns)
+            BaseP = self.table.newBasePage(-1)                          #create FIRST base page "-1"
+            self.table.base_page.append(BaseP)
             self.table.setBase(BaseP,newRecord)
             self.table.page_directory.update({newRecord.key:BaseP})
 
-        pass
+        else:
+
+            BaseP = self.table.base_page[-1]                            #access the last base_page in the list "-1" DOES NOT REFER TO THE PAGE NUMBER
+            self.table.base_page.append(BaseP)
+            self.table.setBase(BaseP,newRecord)
+            self.table.page_directory.update({newRecord.key:BaseP})
+
+
         
 
     """

@@ -1,4 +1,5 @@
 from lstore.index import Index
+from lstore.page import Page
 from time import time
 
 INDIRECTION_COLUMN = 0
@@ -16,6 +17,8 @@ class Record:
         self.schema_encoding = schema_encoding
         self.key = key
         self.columns = columns
+        self.pageLocStart = None
+        self.pageLocEnd = None
 
 
 # Each Table should have both Base and Tail pages 
@@ -45,8 +48,20 @@ class Table:
     def setBase(self, basePage, insertRecord):
 
         try:
-            basePage.write(insertRecord)
-            return True
+            writeSucc = basePage.write(insertRecord)
+
+            if(writeSucc == False):
+                newID = basePage.directoryID-1
+                newBase = self.newBasePage(newID)
+                newBase.write(insertRecord)
+                return True
+            else:
+                return True
         except:
             print("Base setting failed")
             return False 
+
+    def newBasePage(self, pageID):
+
+        newBase = Page(pageID)                                          #create a base page
+        return newBase
