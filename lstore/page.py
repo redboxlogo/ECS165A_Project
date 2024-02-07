@@ -21,16 +21,29 @@ class Page:
 
         for i in range(len(RecordObj.columns)):
             self.data[i] = 5#RecordObj.columns[i]
+            print(self.data[0:i])
+
+
+        for i in range(min(len(RecordObj.columns), len(self.data[i]))):
+            self.data[i] = RecordObj.columns[i]
 
         pass
 
-        # # Create a bytearray with 4096 elements initialized to 0
-        # my_bytearray = bytearray(4096)
+    def fill_bytearray(byte_array, value_list):
+        
+        start_index = byte_array.find(b'\x00') + 1 if b'\x00' in byte_array else 0
 
-        # # Change the values of elements in the bytearray
-        # # For example, let's change the first 10 elements to a different value (e.g., 255)
-        # for i in range(20):
-        #     my_bytearray[i] = 8
+        for i in range(start_index, min(start_index + len(value_list), len(byte_array))):
+        
+            byte_array[i] = value_list[i - start_index]
 
-        # # Print the updated bytearray
-        # print(my_bytearray)
+    # # Create a bytearray with 4096 elements initialized to 0
+    # my_bytearray = bytearray(4096)
+
+    # # Change the values of elements in the bytearray
+    # # For example, let's change the first 10 elements to a different value (e.g., 255)
+    # for i in range(20):
+    #     my_bytearray[i] = 8
+
+    # # Print the updated bytearray
+    # print(my_bytearray)

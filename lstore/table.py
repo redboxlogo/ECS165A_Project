@@ -40,4 +40,13 @@ class Table:
     def __merge(self):
         print("merge is happening")
         pass
- 
+        # helper function to set Base record after insert retaining read-only properties of base page
+
+    def setBase(self, basePage, insertRecord):
+
+        try:
+            basePage.write(insertRecord)
+            return True
+        except:
+            print("Base setting failed")
+            return False 
