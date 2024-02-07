@@ -114,6 +114,7 @@ class Query:
     # Update a record with specified key and columns
     # Returns True if update is succesful
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
+    # Indexes always point to base records, and they never directly point to any tail records, so tail pages must be completed in update.
     """
     def update(self, primary_key, *columns):
         pass
