@@ -6,7 +6,7 @@ class Page:
     def __init__(self, directoryID):
         self.directoryID = directoryID          # page identifier: positive for tail pages; negative for base
         self.num_records = 0                    # count total records
-        self.record_metadata = []                   # list of records
+        self.record_metadata = {}               # dictionary of records
         self.data = bytearray(PAGE_SIZE)        # page size/data
         self.nextDataBlock = 0                  # page index for next empty area of page
 
@@ -35,6 +35,6 @@ class Page:
         else:
             self.num_records += 1                                                                                                   # if remaining capacity is fine continue
             RecordObj.pageLocStart, RecordObj.pageLocEnd = self.fill_bytearray(self.data, RecordObj.columns, self.nextDataBlock)    # fill the byte array with data and return the (first element location) and (last element location +1)
-            self.record_metadata.append(self.recordColDel(RecordObj))                                                               # store dataless metadata for record
+            self.record_metadata.update({RecordObj.key:self.recordColDel(RecordObj)})                                               # store dataless metadata for record
             self.nextDataBlock = RecordObj.pageLocEnd                                                                               # update write head with new location
             return True

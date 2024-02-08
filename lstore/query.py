@@ -52,11 +52,10 @@ class Query:
 
         columns = list(columns)
         RID = columns[0]                                                # temp assignment POSSIBLE CHANGE 
-
-        schema_encoding = '0' * self.table.num_columns                  # assign schema encoding to new records
         key = columns[0]                                                # temp assignment POSSIBLE CHANGE 
-        
         columns.pop(0)                                                  # removing the key
+        schema_encoding = '0' * self.table.num_columns                  # assign schema encoding to new records
+
         newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
         if (self.table.page_directory == {}):
 
