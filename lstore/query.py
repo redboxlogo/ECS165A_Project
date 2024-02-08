@@ -51,24 +51,25 @@ class Query:
     def insert(self, *columns):
 
         columns = list(columns)
-        RID = columns[0]                                                #temp assignment POSSIBLE CHANGE 
-        key = columns[0]                                                #temp assignment POSSIBLE CHANGE 
-        schema_encoding = '0' * self.table.num_columns
-        columns.pop(0)                                                  #removing the key
-        newRecord = Record(RID, schema_encoding, key, columns)          #create a new Record() object from table.py
+        RID = columns[0]                                                # temp assignment POSSIBLE CHANGE 
+
+        schema_encoding = '0' * self.table.num_columns                  # assign schema encoding to new records
+        key = columns[0]                                                # temp assignment POSSIBLE CHANGE 
+        
+        columns.pop(0)                                                  # removing the key
+        newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
         if (self.table.page_directory == {}):
 
-            BaseP = self.table.newBasePage(-1)                          #create FIRST base page "-1"
-            self.table.base_page.append(BaseP)
-            self.table.setBase(BaseP,newRecord)
-            self.table.page_directory.update({newRecord.key:BaseP})
+            BaseP = self.table.newBasePage(-1)                          # create FIRST base page "-1"
+            BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page
+            self.table.base_page.append(BaseP)                          # append page table of contents (only needs to be done for first page "-1")
+            self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
 
         else:
 
-            BaseP = self.table.base_page[-1]                            #access the last base_page in the list "-1" DOES NOT REFER TO THE PAGE NUMBER
-            self.table.base_page.append(BaseP)
-            self.table.setBase(BaseP,newRecord)
-            self.table.page_directory.update({newRecord.key:BaseP})
+            BaseP = self.table.base_page[-1]                            # access the last base_page in the list "-1" DOES NOT REFER TO THE PAGE NUMBER
+            BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page/ create new base page if first if full
+            self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
 
 
         

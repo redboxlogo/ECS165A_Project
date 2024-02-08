@@ -33,11 +33,11 @@ if(insertFlag == True):
     print("Inserting 10k records took:  \t\t\t", insert_time_1 - insert_time_0) #print
 
 
-# print(query.table.page_directory)                                               #should tell the physical address of page
+# print(set(query.table.page_directory.values()))                                              #should tell the physical address of page
 # print(query.table.base_page[-1].record_list)
-print("======================================================================================================================")
+# print("==================================================================================================================================================================")
 
-print(query.table.base_page)
+# print(query.table.base_page)
 # print(query.table.base_page[-1])
 
 
