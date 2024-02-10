@@ -121,6 +121,6 @@ class Table:
             return False
         baseRID = self.key_map_RID[search_key]
         current_prange = math.floor(baseRID / RECORDS_PER_PRANGE)  # identify page range we are looking at
-        record = self.page_directory[current_prange].select(search_key, baseRID)
+        record = self.page_directory[current_prange].get_record_cols(search_key, baseRID)
         return [record]
         
