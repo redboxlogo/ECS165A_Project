@@ -8,13 +8,18 @@ RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
 
-# idk if we should put this in page?
+# I'm gonna add this to config.py later
 PAGE_SIZE = 4096
-BYTES_PER_ELEMENT = 8
+BYTES_PER_DATA = 8
 PAGES_PER_PRANGE = 16
 
-ELEMENTS_PER_PAGE = PAGE_SIZE / BYTES_PER_ELEMENT
-RECORDS_PER_PRANGE = PAGES_PER_PRANGE * ELEMENTS_PER_PAGE
+RECORDS_PER_PAGE = PAGE_SIZE / BYTES_PER_DATA
+RECORDS_PER_PRANGE = PAGES_PER_PRANGE * RECORDS_PER_PAGE
+
+# 8 bytes per data element stored in a record !! ONLY 7 bytes can be written to
+# 512 data elements per physical page
+# 9 physical pages per base page (first 4 pages are metadata)
+# 16 base pages per page range
 
 
 class Record:
@@ -94,15 +99,15 @@ class Table:
 
     # calculate where RID is located in base pages
     def get_page_index(self, RID):
-        return math.floor((RID % (PAGES_PER_PRANGE * ELEMENTS_PER_PAGE)) / ELEMENTS_PER_PAGE)
+        return math.floor((RID % (PAGES_PER_PRANGE * RECORDS_PER_PAGE)) / RECORDS_PER_PAGE)
 
     # count bytes until data starts
     def get_page_offset(self, RID):
         offset = RID
         while offset >= RECORDS_PER_PRANGE:
             offset -= RECORDS_PER_PRANGE
-        while offset >= ELEMENTS_PER_PAGE:
-            offset -= ELEMENTS_PER_PAGE
+        while offset >= RECORDS_PER_PAGE:
+            offset -= RECORDS_PER_PAGE
         return offset
 
     def get_record(self, offset):  # still need to work on this function, below is the pseudocode
