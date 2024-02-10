@@ -25,13 +25,13 @@ class Query:
     def delete(self, primary_key):
         # Attempt to find the record for the given primary_key.
         try:
-            RID = self.table.index.get(primary_key, None)
+            RID = self.table.index.locate(primary_key, None)
             if RID is None:
                 return False  # Record does not exist.
         except KeyError:
             return False  # Primary key does not exist in the index.
 
-        location = self.table.page_directory.get(RID)
+        location = self.table.page_directory.locate(RID)
         if location is None:
             return False  # Location not found, indicating record might not exist.
 
