@@ -47,6 +47,7 @@ class Table:
         self.base_page = []                             # list of Base page objects
         self.tail_page = []                             # list of Tail page objects
         self.index = Index(self)
+        self.key_map_RID = {}                           # dictionary that maps key to RID
         pass
 
     def __merge(self):
