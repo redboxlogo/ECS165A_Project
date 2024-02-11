@@ -93,13 +93,13 @@ class Table:
             tail_offset = self.get_page_offset(base_pointer)  # get tail page offset
             tail_record = self.tail_page[tail_index].get_record(tail_offset)  # fetch the record
             record = Record(tail_record[RID_COLUMN], schema, search_key, tail_record[4:])
-        else:  # retrieves from base page if schema != 1
+        else:  # retrieves from base page if schema = 0
             record = Record(base_record[RID_COLUMN], schema, search_key, base_record[4:])
         return record
 
     # calculate where RID is located in base pages
     def get_page_index(self, RID):
-        return math.floor((RID % (PAGES_PER_PRANGE * RECORDS_PER_PAGE)) / RECORDS_PER_PAGE)
+        return math.floor((RID % (RECORDS_PER_PAGE * PAGES_PER_PRANGE)) / RECORDS_PER_PAGE)
 
     # count bytes until data starts
     def get_page_offset(self, RID):
@@ -110,6 +110,7 @@ class Table:
             offset -= RECORDS_PER_PAGE
         return offset
 
+    # retrieve record from specific offset
     def get_record(self, offset):  # still need to work on this function, below is the pseudocode
         record = []
         # loop through each metadata column and read data at the given offset:
