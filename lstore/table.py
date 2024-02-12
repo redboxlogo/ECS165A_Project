@@ -8,20 +8,6 @@ RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
 
-# I'm gonna add this to config.py later
-PAGE_SIZE = 4096
-BYTES_PER_DATA = 8
-PAGES_PER_PRANGE = 16
-
-RECORDS_PER_PAGE = PAGE_SIZE / BYTES_PER_DATA
-RECORDS_PER_PRANGE = PAGES_PER_PRANGE * RECORDS_PER_PAGE
-
-# 8 bytes per data element stored in a record !! ONLY 7 bytes can be written to
-# 512 data elements per physical page
-# 9 physical pages per base page (first 4 pages are metadata)
-# 16 base pages per page range
-
-
 class Record:
 
     def __init__(self, rid, schema_encoding, key, columns):     # default constructor for Record() obj
@@ -81,52 +67,27 @@ class Table:
         newBase = Page(pageID)                                          # create a base page
         return newBase                                                  # return newly created base page
 
-    def get_record_cols(self, search_key, baseRID):
-        base_index = self.get_page_index(baseRID)  # get base page index
-        base_offset = self.get_page_offset(baseRID)  # get base page offset
-        base_record = self.base_page[base_index].get_record(base_offset)  # fetch the record
-        base_pointer = base_record[INDIRECTION_COLUMN]  # get base indirection RID
-        schema = base_record[SCHEMA_ENCODING_COLUMN]  # retrieves schema encoding info stored in the col
+    # returns the RID of a record for a specific search key
+    # TODO:
+    # 1. map RID to specific page location in the database
+    # 2. iterate through all base pages and retrieve the key and RID columns
+    # 3. check if the entry value matches the given key; if True, get associated RID
+    # 4. check if RID is associated with deleted value; if True, return got_RID = None
+    # 5. to optimize: check if current base page = last base page; if True, return got_RID
+    def get_RID(self, search_key):
+        got_RID = None
+        pass
 
-        if schema == 1:  # retrieves from tail page if schema = 1
-            tail_index = self.get_page_index(base_pointer)  # get tail page index
-            tail_offset = self.get_page_offset(base_pointer)  # get tail page offset
-            tail_record = self.tail_page[tail_index].get_record(tail_offset)  # fetch the record
-            record = Record(tail_record[RID_COLUMN], schema, search_key, tail_record[4:])
-        else:  # retrieves from base page if schema = 0
-            record = Record(base_record[RID_COLUMN], schema, search_key, base_record[4:])
-        return record
-
-    # calculate where RID is located in base pages
-    def get_page_index(self, RID):
-        return math.floor((RID % (RECORDS_PER_PAGE * PAGES_PER_PRANGE)) / RECORDS_PER_PAGE)
-
-    # count bytes until data starts
-    def get_page_offset(self, RID):
-        offset = RID
-        while offset >= RECORDS_PER_PRANGE:
-            offset -= RECORDS_PER_PRANGE
-        while offset >= RECORDS_PER_PAGE:
-            offset -= RECORDS_PER_PAGE
-        return offset
-
-    # retrieve record from specific offset
-    def get_record(self, offset):  # still need to work on this function, below is the pseudocode
-        record = []
-        # loop through each metadata column and read data at the given offset:
-            # read the data in the metadata column (where to access in metadata?)
-            # append data to record
-        # loop through each data column and read data at the given offset:
-            # read the data in the data column
-            # append data to record
-        # return record
-
-    def select(self, search_key, search_key_index, projected_query_columns):
-        if search_key not in self.key_map_RID:
-            print("RID does not exist for this key")
-            return False
-        baseRID = self.key_map_RID[search_key]
-        current_prange = math.floor(baseRID / RECORDS_PER_PRANGE)  # identify page range we are looking at
-        record = self.page_directory[current_prange].get_record_cols(search_key, baseRID)
-        return [record]
+    # reads the RID and returns the most recently updated record for that RID
+    # TODO:
+    # 1. retrieve record info (page_directory?) page range, base page, and page index
+    # 2. iterate through all columns of the record and append corresponding entries for the specified page index into all_column_entries
+    # 3. extract the key, schema encoding, and user column values from all_column_entries
+    # 4. check schema encoding;
+            # if schema = 0 (non-updated), return Record object with key, RID, schema encoding, and column values
+            # if schema = 1 (updated), retrieve additional information from the tail page directory
+    # 5. return a Record object with updated key, RID, schema encoding, and column values
+    def read(self, RID):
+        # all_column_entries = []
+        pass
         
