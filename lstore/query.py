@@ -82,8 +82,32 @@ class Query:
     # Returns False if record locked by TPL
     # Assume that select will never be called on a key that doesn't exist
     """
+    # TODO:
+    # 1. find value that matches search_key in specified column 'search_key_index'
+    # 2. check which indices are set to 1 in projected_columns_index
+    # 3. check schema_encoding to see if we need to retrieve value from base or tail page
+    # 4. combine all values according to projected_columns_index list
+    # 5. return list
     def select(self, search_key, search_key_index, projected_columns_index):
-        return self.table.select(search_key, search_key_index, projected_columns_index)
+        records_list = []  # initialize list of Record objects to return
+        location = self.table.index.locate(search_key_index, search_key)  # retrieve location of the record
+
+        # make sure the record exists
+        if location is None:
+            return False  # record does not exist
+
+        RID = self.table.get_RID(search_key)  # get_RID() returns the RID of the record
+        current_record = self.table.read(RID)  # read() returns the most recently updated record of RID
+        # current_record is a Record object
+
+        for i in range(len(projected_columns_index)):  # index through columns to return
+            if projected_columns_index[i] == 1:  # at a column we want to look at (value is 1)
+                continue  # keep current_record value
+            else:
+                current_record.columns[i] = None  # replace index with None at columns we skip (value is 0)
+                
+
+        return records_list.append(current_record)
 
     
     """
