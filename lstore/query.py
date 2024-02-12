@@ -47,19 +47,18 @@ class Query:
     # Return True upon succesful insertion
     # Returns False if insert fails for whatever reason
     """
-        
+    # need to check for duplicate inserts
     def insert(self, *columns):
 
         columns = list(columns)
         RID = columns[0]                                                # temp assignment POSSIBLE CHANGE 
         key = columns[0]                                                # temp assignment POSSIBLE CHANGE 
         columns.pop(0)                                                  # removing the key
-        schema_encoding = '0' * self.table.num_columns                  # assign schema encoding to new records
-
+        schema_encoding = [0] * (self.table.num_columns-1)                  # assign schema encoding to new records
         newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
         if (self.table.page_directory == {}):
 
-            BaseP = self.table.newBasePage(-1)                          # create FIRST base page "-1"
+            BaseP = self.table.newPage(-1)                          # create FIRST base page "-1"
             BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page
             self.table.base_page.append(BaseP)                          # append page table of contents (only needs to be done for first page "-1")
             self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
@@ -67,7 +66,7 @@ class Query:
         else:
 
             BaseP = self.table.base_page[-1]                            # access the last base_page in the list "-1" DOES NOT REFER TO THE PAGE NUMBER
-            BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page/ create new base page if first if full
+            BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page/ create new base page if first is full
             self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
 
 
@@ -107,7 +106,60 @@ class Query:
     # Indexes always point to base records, and they never directly point to any tail records, so tail pages must be completed in update.
     """
     def update(self, primary_key, *columns):
-        pass
+        
+        updateColumns = list(columns)
+        TailPage = self.table.getTailPage()                         # get/create last/new tail record
+        basePage = self.table.getBasePage(primary_key)              # get the base page that contains the record
+        originalRecord = basePage.getRecord(primary_key)            # get the record from the base page
+        baseRecCols = originalRecord.getallCols(basePage)           # get column data of base
+        currTable = self.table
+
+
+
+        if(updateColumns[0] == -999):                                         # condition for delete record
+            
+            pass        
+
+        # if(updateColumns[0] != None):                                       # potentially perform a key update
+        #     print("updating key")
+        #     print("old key:")
+        #     print(originalRecord.key)
+        #     print("old data")
+        #     print(basePage.read_bytearray(basePage.data,originalRecord))
+        #     newKey = updateColumns[0]
+        #     oldKey = originalRecord.key
+        #     originalRecord = originalRecord.updatekey(newKey)
+        #     basePage = basePage.updateMetadataKey(newKey,oldKey)
+        #     currTable = currTable.updatePageDirectory(newKey,oldKey)
+        #     print("new key")
+        #     print(originalRecord.key)
+
+
+
+        indirectionExists = originalRecord.checkIndirection()                                           # check for pre-existing indirection pointer
+        if(indirectionExists == True):                                                                  # if indirection pointer exists, do a pointer redirection
+            TailRec = originalRecord.getIndirection()                                                   # if indirection from base record exists, store in "TailRec"
+            newTailRec = TailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)    # add new tail record and update base page with new tail record
+            writeSucc = TailPage.write(newTailRec)                                                      # writeSucc == true if write was successful; false if page is full
+            if(writeSucc == False):                                                                     # if write() failed
+                newID = TailPage.directoryID-1                                                          # create new basepage ID 
+                newTailPage = self.table.newPage(newID)                                                 # create new tail page
+                self.table.tail_page.append(newTailPage)                                                # append new tail page to tail page list
+                newTailPage.write(newTailRec)                                                           # write record to new tail page
+           
+            return True
+        else:                                                                                               # if indirection pointer doesnt exist
+            TailPage = self.table.setTailPage(TailPage, originalRecord, baseRecCols)                        # create first copy of original record in Tail page and return said record
+            firstTailRec = originalRecord.getIndirection()                                                  # get first copy of record in Tail page
+            newTailRec = firstTailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)   # add new tail record and update base page with new tail record
+            writeSucc = TailPage.write(newTailRec)                                                          # writeSucc == true if write was successful; false if page is full
+            if(writeSucc == False):                                                                         # if write() failed
+                newID = TailPage.directoryID-1                                                              # create new basepage ID 
+                newTailPage = self.table.newPage(newID)                                                     # create new tail page
+                self.table.tail_page.append(newTailPage)                                                    # append new tail page to tail page list
+                newTailPage.write(newTailRec)                                                               # write record to new tail page
+            # print(TailPage.read_bytearray(TailPage.data,newTailRec))
+            return True
 
     
     """

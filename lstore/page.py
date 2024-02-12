@@ -21,12 +21,23 @@ class Page:
             byte_array[i] = value_list[i - start_index]   
         return start_index, last_index                                                                                              # return the start and last index
 
+    def read_bytearray(self, byte_array, recordObj):
+        returnData = []
+        start_index = recordObj.getStart()
+        last_index = recordObj.getEnd()
+        for i in range(start_index, last_index):                                                                                    # for loop to read byte_array
+            returnData.append(byte_array[i])
+        return returnData
+
     def recordColDel(self, RecordObj):                                                                                              # delete column data from record object after writing to byte array
         RecordObj.columns = None
         return RecordObj
     
+    # checks capacity of page
+    # writes to bytearray
+    # update page dirctionary with metadata
+    # move next datablock
     def write(self, RecordObj):
-
         remainCapacity = self.has_capacity()                                                                                        # get remaining capacity of page
         dataAmmount = len(RecordObj.columns)                                                                                        # get length of data that needs to be written
 
@@ -38,3 +49,15 @@ class Page:
             self.record_metadata.update({RecordObj.key:self.recordColDel(RecordObj)})                                               # store dataless metadata for record
             self.nextDataBlock = RecordObj.pageLocEnd                                                                               # update write head with new location
             return True
+        
+    # test edge case of key does not exist
+    def getRecord(self, searchKey):
+        try:
+            returnRecord = self.record_metadata.get(searchKey) # get the page containing the location of record
+        except:
+            print("no Record location")
+        return returnRecord
+        
+    def updateMetadataKey(self, newKey, oldKey):
+        self.record_metadata[newKey] = self.record_metadata.pop(oldKey) # Create a new key-value pair with the updated key and value
+        return self

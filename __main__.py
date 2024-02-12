@@ -39,12 +39,20 @@ if(insertFlag == True):
 
 # print(query.table.base_page)
 # print(query.table.base_page[-1])
+# print("this is how many records the first base page contains")
+# print(query.table.base_page[0].num_records)
+# print("this is how many records the last base page contains")
+# print(query.table.base_page[-1].num_records)
 
-
-
+# print("this returns the base page for a given key (not RID)")
+# print(query.table.page_directory.get(906659671))
+# print("let's save this page so we can find the record")
+# BasePage = query.table.page_directory.get(906659671)
+# print("lets get the record metadata from the page")
+# print(BasePage.record_metadata.get(906659671))
 ################################################################################################################################
 
-updateFlag = False
+updateFlag = True
 
 if(updateFlag == True):
     # Measuring update Performance
@@ -58,6 +66,7 @@ if(updateFlag == True):
 
     update_time_0 = process_time()                                              #get time 
     for i in range(0, 10000):                                                   #update 10k queries
+        # query.update(906659671, *(choice(update_cols)))                      #call update() from query
         query.update(choice(keys), *(choice(update_cols)))                      #call update() from query
     update_time_1 = process_time()                                              #get time
     print("Updating 10k records took:  \t\t\t", update_time_1 - update_time_0)  #print
