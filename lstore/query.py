@@ -23,23 +23,23 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
-        # Attempt to find the record for the given primary_key.
-        try:
-            RID = self.table.index.locate(primary_key, None)
-            if RID is None:
-                return False  # Record does not exist.
-        except KeyError:
-            return False  # Primary key does not exist in the index.
+      # Attempt to find the record for the given primary_key.
+      try:
+          RID = self.table.index.locate(primary_key, None) # Locates the Record ID (RID) using the primary key.
+          if RID is None:
+              return False  # Return False if the primary key does not map to any record.
+      except KeyError:
+          return False  # Return False if the primary key is not in the index, indicating no such record.
 
-        location = self.table.page_directory.locate(RID)
-        if location is None:
-            return False  # Location not found, indicating record might not exist.
+      location = self.table.page_directory.locate(RID) # Finds the actual location of the record using RID.
+      if location is None:
+          return False  # Return False if no location found, indicating the record might not exist.
 
-        # Performs the actual deletion operation here.
-        del self.table.page_directory[RID]  # Remove the record from the page directory.
-        del self.table.index[primary_key]  # Remove the primary key from the index.
+      # Performs the actual deletion operation here.
+      del self.table.page_directory[RID] # Remove the record from the page directory using RID.
+      del self.table.index[primary_key]  # Remove the primary key from the index, effectively deleting the record.
 
-        return True  # Return True upon successful deletion.
+      return True  # Return True upon successful deletion.
 
 
     """
