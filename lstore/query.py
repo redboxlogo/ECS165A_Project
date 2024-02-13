@@ -122,7 +122,11 @@ class Query:
 
         updateColumns = list(columns)
         TailPage = self.table.getTailPage()                         # get/create last/new tail record
-        originalRecord = basePage.getRecord(primary_key)            # get the record from the base page
+        try:
+            originalRecord = basePage.getRecord(primary_key)            # get the record from the base page
+        except:
+            print( "page does not exist for this record")
+            return False
         baseRecCols = originalRecord.getallCols(basePage)           # get column data of base
         currTable = self.table
 

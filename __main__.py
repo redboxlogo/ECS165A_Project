@@ -52,7 +52,7 @@ if(insertFlag == True):
 # print(BasePage.record_metadata.get(906659671))
 ################################################################################################################################
 
-updateFlag = False
+updateFlag = True
 
 if(updateFlag == True):
     # Measuring update Performance
@@ -67,7 +67,7 @@ if(updateFlag == True):
     update_time_0 = process_time()                                              #get time 
     for i in range(0, 10000):                                                   #update 10k queries
         # query.update(906659671, *(choice(update_cols)))                      #call update() from query
-        query.update(choice(keys), *(choice(update_cols)))                      #call update() from query
+        query.update(1, *(choice(update_cols)))                      #call update() from query
     update_time_1 = process_time()                                              #get time
     print("Updating 10k records took:  \t\t\t", update_time_1 - update_time_0)  #print
 
