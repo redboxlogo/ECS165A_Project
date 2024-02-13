@@ -230,7 +230,24 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_range, end_range, aggregate_column_index):
-        pass
+        
+        total_sum = 0
+        
+        try:
+        
+            for key in range(start_range, end_range):
+            
+                record = self.table.index.locate(key, None)
+                
+                if record is not None:
+                
+                    total_sum += record.columns[aggregate_column_index]
+                    
+        except KeyError:
+            
+            return False  # key is not found
+
+        return total_sum
 
     
     """
