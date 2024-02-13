@@ -52,7 +52,7 @@ if(insertFlag == True):
 # print(BasePage.record_metadata.get(906659671))
 ################################################################################################################################
 
-updateFlag = True
+updateFlag = False
 
 if(updateFlag == True):
     # Measuring update Performance
@@ -102,7 +102,7 @@ if(sumFlag == True):
 
 ################################################################################################################################
 
-deleteFlag = False
+deleteFlag = True
 
 if(deleteFlag == True):
     # Measuring Delete Performance
