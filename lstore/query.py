@@ -120,7 +120,7 @@ class Query:
             else:
                 data_list.append(None)  # otherwise, we append None
 
-        data_list = current_record_metadata.columns  # get column data
+        current_record_metadata.columns = data_list # puts everything from data_list into the columns of the record
         records_list.append(current_record_metadata)  # append record metadata and return
 
         return records_list
