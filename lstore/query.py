@@ -23,6 +23,7 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
+
       # Attempt to find the record for the given primary_key.
       try:
           RID = self.table.index.locate(primary_key, None) # Locates the Record ID (RID) using the primary key.

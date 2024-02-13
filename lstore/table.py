@@ -21,40 +21,40 @@ class Record:
         self.pageLocStart = None                                # bytearray index for start of record
         self.pageLocEnd = None                                  # bytearray index for (last element in columns + 1)
 
-    def checkIndirection(self):
-        if self.indirection == None:
-            return False
-        else:
-            return True
+    def checkIndirection(self):                                 # boolean to check if an indirection exists inside a base record 
+        if self.indirection == None:                            # if indirection does not exist  
+            return False                                        # return False
+        else:                                                   # else if indirection points to something
+            return True                                         # return true
         
-    def getallCols(self, page):
-        cols = []
-        start_index = self.pageLocStart
-        end_index = self.pageLocEnd
+    def getallCols(self, page):                                 # function to return 
+        cols = []                                               # initialize empty column list
+        start_index = self.pageLocStart                         # get the start index of the data in page.bytearray
+        end_index = self.pageLocEnd                             # get the end index of the data in page.bytearray
         # Iterate over the specified range
-        for i in range(start_index, end_index):
-            cols.append(page.data[i])
-        return cols
+        for i in range(start_index, end_index):                 # for loop to go through elements in data
+            cols.append(page.data[i])                           # fill cols list with elements
+        return cols                                             # return list cols
     
-    def setIndirection(self, destinationRec):
-        self.indirection = destinationRec
-        return self
+    def setIndirection(self, destinationRec):                   # function sets record.indirection to the input record
+        self.indirection = destinationRec                       # set the indirection attribute
+        return self                                             # return original record
     
-    def getIndirection(self):
-        return self.indirection
+    def getIndirection(self):                                   # get the record stored in the indirection column
+        return self.indirection                                 # return record object in indirection
     
-    def getSchemaCode(self):
-        return self.schema_encoding
+    def getSchemaCode(self):                                    # get the schema encoding inside a record
+        return self.schema_encoding                             # return the schema encoding
     
-    def setSchemaCode(self, schemaCode):
-        self.schema_encoding = schemaCode
-        return self
+    def setSchemaCode(self, schemaCode):                        # change the schema encoding 
+        self.schema_encoding = schemaCode                       # change schema encoding to input 
+        return self                                             # return the record
     
-    def updateBaseCols(self, basePage, newCols):
-        basePage.fill_bytearray(basePage.data, newCols, self.pageLocStart)
-        return self
+    def updateBaseCols(self, basePage, newCols):                            # function update data inside base page
+        basePage.fill_bytearray(basePage.data, newCols, self.pageLocStart)  # update the Base page with new data
+        return self                                                         # return the base record
 
-    def updateTailRec(self, baseRecord, basePage, key, updateCols):
+    def updateTailRec(self, baseRecord, basePage, key, updateCols):                         # function adds new tail record and connects to base and old tail records 
 
         # print(updateCols)
         tailRID = uuid4()                                                                   # generate unique RID
@@ -80,15 +80,15 @@ class Record:
 
         return newTailRecord
     
-    def updatekey(self, newKey):
-        self.key = newKey
-        return self
+    def updatekey(self, newKey):                                                            # update the key of a record
+        self.key = newKey                                                                   # make the key attribute equal to newKey input
+        return self                                                                         # return recordObj with updated key
 
-    def getStart(self):
-        return self.pageLocStart
+    def getStart(self):                                                                     # get the start location for record data in a base page
+        return self.pageLocStart                                                            # return start index
     
-    def getEnd(self):
-        return self.pageLocEnd
+    def getEnd(self):                                                                       # get the end location for record data in base page            
+        return self.pageLocEnd                                                              # return the end index of the record data in base page
 
 # Each Table should have both Base and Tail pages 
 
@@ -148,10 +148,10 @@ class Table:
 
     # this function assumes that a prior tail record does not exist
     def setTailPage(self, tailPage, insertRecord, colsList):
-        tailRID = uuid4()
-        newTailRecord = Record(tailRID, insertRecord.schema_encoding, insertRecord.key, colsList)
-        newTailRecord = newTailRecord.setIndirection(insertRecord)                                   #tail record indirection points to base record
-        insertRecord = insertRecord.setIndirection(newTailRecord)                                    #insert record indirection points to 
+        tailRID = uuid4()                                                                            # generate a unique RID for a tail record
+        newTailRecord = Record(tailRID, insertRecord.schema_encoding, insertRecord.key, colsList)    # create new record object 
+        newTailRecord = newTailRecord.setIndirection(insertRecord)                                   # tail record indirection points to base record
+        insertRecord = insertRecord.setIndirection(newTailRecord)                                    # insert record indirection points to 
         try:
             writeSucc = tailPage.write(newTailRecord)   # try to write to base page
 
@@ -172,7 +172,7 @@ class Table:
 
     def getTailPage(self):
         if(self.tail_page == []):                       # if tail pages do not exist
-            newTail = self.newPage(1)                        # create a new tail page with ID 1
+            newTail = self.newPage(1)                   # create a new tail page with ID 1
             return newTail                              # return new tail page
         else: 
             return self.tail_page[-1]                   # return last tail page in list

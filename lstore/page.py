@@ -14,22 +14,22 @@ class Page:
         return PAGE_SIZE-self.nextDataBlock     # return total remaining capacity
         
 
-    def fill_bytearray(self, byte_array, value_list, startloc):                                                                     # function used to fill column data into bytearray()
-        start_index = startloc                                                                                                      # get start location for write op (append)
-        last_index = min(start_index + len(value_list), len(byte_array))                                                            # get end index for write op
-        for i in range(start_index, last_index):                                                                                    # for loop to fill byte_array
+    def fill_bytearray(self, byte_array, value_list, startloc):                         # function used to fill column data into bytearray()
+        start_index = startloc                                                          # get start location for write op (append)
+        last_index = min(start_index + len(value_list), len(byte_array))                # get end index for write op
+        for i in range(start_index, last_index):                                        # for loop to fill byte_array
             byte_array[i] = value_list[i - start_index]   
-        return start_index, last_index                                                                                              # return the start and last index
+        return start_index, last_index                                                  # return the start and last index
 
-    def read_bytearray(self, byte_array, recordObj):
-        returnData = []
-        start_index = recordObj.getStart()
-        last_index = recordObj.getEnd()
-        for i in range(start_index, last_index):                                                                                    # for loop to read byte_array
-            returnData.append(byte_array[i])
-        return returnData
+    def read_bytearray(self, byte_array, recordObj):                                    # read data inside page bytearray()
+        returnData = []                                                                 # initialize returnData list containing the data
+        start_index = recordObj.getStart()                                              # get the start index of data inside bytearray
+        last_index = recordObj.getEnd()                                                 # get the end index of data inside bytearray
+        for i in range(start_index, last_index):                                        # for loop to read byte_array
+            returnData.append(byte_array[i])                                            # full returnData list
+        return returnData                                                               # return the returnData list
 
-    def recordColDel(self, RecordObj):                                                                                              # delete column data from record object after writing to byte array
+    def recordColDel(self, RecordObj):                                                  # delete column data from record object after writing to byte array
         RecordObj.columns = None
         return RecordObj
     
