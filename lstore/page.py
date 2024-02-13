@@ -1,4 +1,4 @@
-import logger
+from lstore.logger import logger
 
 PAGE_SIZE = 4096
 

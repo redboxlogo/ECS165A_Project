@@ -2,7 +2,7 @@ from lstore.index import Index
 from lstore.page import Page
 from time import time
 from uuid import uuid4
-import logger
+from lstore.logger import logger
 
 INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
@@ -123,6 +123,7 @@ class Table:
             if(writeSucc == False):                     # if write() failed
                 newID = basePage.directoryID-1          # create new basepage ID 
                 newBase = self.newPage(newID)           # create new base page
+                # logger.info("new Base Page created with ID: {}".format(newID))
                 self.base_page.append(newBase)          # append new base page to base page list
                 newBase.write(insertRecord)             # write record to new base page
                 return newBase                          # return new page object
@@ -159,6 +160,7 @@ class Table:
             if(writeSucc == False):                     # if write() failed
                 newID = tailPage.directoryID+1          # create new tail page ID 
                 newTail = self.newPage(newID)           # create new tail page
+                # logger.info("new Tail Page created with ID: {}".format(newID))
                 self.tail_page.append(newTail)          # append new tail page to tail page list
                 newTail.write(newTailRecord)            # write record to new tail page
                 return newTail                          # return new page object

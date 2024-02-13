@@ -6,8 +6,10 @@ import logging
 
 
 # Set up logging configuration
-logging.basicConfig(filename='database.log', level=logging.INFO,
+logging.basicConfig(filename='L-store.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
+
+logging.basicConfig(level=logging.DEBUG)
 
 # Create logger object
 logger = logging.getLogger(__name__)

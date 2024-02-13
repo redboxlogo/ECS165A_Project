@@ -1,7 +1,7 @@
 from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.page import Page
-import logger
+from lstore.logger import logger
 
 
 class Query:
@@ -25,18 +25,16 @@ class Query:
     """
     def delete(self, primary_key):
         # Input Validation: Check if the primary_key exists in the page directory.
-        if primary_key not in self.table.page_directory:
-            return False  # Return False immediately if primary_key does not exist.
-
-        # Since the primary_key exists, proceed with finding the base page.
         basePage = self.table.getBasePage(primary_key)
         if basePage is None:
+            #logger.info("Delete failed for Record, key does not exist in page metadata, key: {}".format(primary_key))
             return False  # Return False if the base page does not exist for the given primary key.
 
         # Use the getRecord method to check if the record exists in the base page's metadata.
         record = basePage.getRecord(primary_key)
         if record is None:
-            return False  # Return False if the record does not exist within the base page.
+            #logger.info("Delete failed for Record, key does not exist in page metadata, key: {}".format(primary_key))
+            return False  # Return False if the record metadata does not exist within the base page.
 
         # Proceed to delete it from the base page's record metadata.
         del basePage.record_metadata[primary_key]
@@ -51,6 +49,8 @@ class Query:
         # Use self.table.key to reference the primary key column.
         self.table.index.remove(self.table.key, primary_key)
 
+        #logger.info("Delete success for Record key: {}".format(primary_key))
+
         return True  # Return True upon successful deletion.
 
 
@@ -64,6 +64,8 @@ class Query:
 
         if(self.table.getBasePage(columns[0]) != None):
             print("Record already in directory")
+            #logger.info("failed to insert record with key: {}".format(self.table.getBasePage(columns[0])))
+
             return False
 
 
@@ -79,6 +81,8 @@ class Query:
             BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page
             self.table.base_page.append(BaseP)                          # append page table of contents (only needs to be done for first page "-1")
             self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
+            # logger.info("Base page: -1 created")
+            # logger.info("new record inserted to Base Page with key: {}".format(newRecord.key))
             return True
 
         else:
@@ -86,6 +90,7 @@ class Query:
             BaseP = self.table.base_page[-1]                            # access the last base_page in the list "-1" DOES NOT REFER TO THE PAGE NUMBER
             BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page/ create new base page if first is full
             self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
+            # logger.info("new record inserted to Base Page with key: {}".format(newRecord.key))
             return True
 
         
@@ -122,7 +127,7 @@ class Query:
 
         current_record_metadata.columns = data_list # puts everything from data_list into the columns of the record
         records_list.append(current_record_metadata)  # append record metadata and return
-
+        # logger.info("selecting Record with key: {}".format(current_record_metadata.key))
         return records_list
     
     """
@@ -149,17 +154,16 @@ class Query:
         try:
             basePage = self.table.getBasePage(primary_key)              # get the base page that contains the record
         except:
-            print("key does not exist in directory")
+            # logger.info("Update failed for Record, key does not exist in page directory, key: {}".format(primary_key))
             return False
 
         updateColumns = list(columns)
-        TailPage = self.table.getTailPage()                         # get/create last/new tail record
+        TailPage = self.table.getTailPage()                         # get last/create new tail record
         try:
             originalRecord = basePage.getRecord(primary_key)            # get the record from the base page
         except:
-            print( "page does not exist for this record")
+            # logger.info("Update failed, key does not exist in page metadata key: {}".format(primary_key))
             return False
-        baseRecCols = originalRecord.getallCols(basePage)           # get column data of base
         currTable = self.table
 
 
@@ -194,10 +198,14 @@ class Query:
                 newTailPage = self.table.newPage(newID)                                                 # create new tail page
                 self.table.tail_page.append(newTailPage)                                                # append new tail page to tail page list
                 newTailPage.write(newTailRec)                                                           # write record to new tail page
-           
+                # logger.log("New Tail created with key: {}".format(newID))
+            # logger.info("Updated Record with key: {}".format(primary_key))
+
             return True
+        
         else:                                                                                               # if indirection pointer doesnt exist
-            TailPage = self.table.setTailPage(TailPage, originalRecord, baseRecCols)                        # create first copy of original record in Tail page and return said record
+            baseRecCols = originalRecord.getallCols(basePage)                                               # get column data of base
+            TailPage = self.table.setTailPage(TailPage, originalRecord, baseRecCols)                        # create first copy of original record in Tail page and return said record page
             firstTailRec = originalRecord.getIndirection()                                                  # get first copy of record in Tail page
             newTailRec = firstTailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)   # add new tail record and update base page with new tail record
             writeSucc = TailPage.write(newTailRec)                                                          # writeSucc == true if write was successful; false if page is full
@@ -206,6 +214,9 @@ class Query:
                 newTailPage = self.table.newPage(newID)                                                     # create new tail page
                 self.table.tail_page.append(newTailPage)                                                    # append new tail page to tail page list
                 newTailPage.write(newTailRec)                                                               # write record to new tail page
+                # logger.log("New Tail created with key: {}".format(newID))
+            # logger.info("Updated Record with key: {}".format(primary_key))
+
             # print(TailPage.read_bytearray(TailPage.data,newTailRec))
             return True
 
