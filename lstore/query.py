@@ -23,24 +23,34 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
+        # Input Validation: Check if the primary_key exists in the page directory.
+        if primary_key not in self.table.page_directory:
+            return False  # Return False immediately if primary_key does not exist.
 
-      # Attempt to find the record for the given primary_key.
-      try:
-          RID = self.table.index.locate(primary_key, None) # Locates the Record ID (RID) using the primary key.
-          if RID is None:
-              return False  # Return False if the primary key does not map to any record.
-      except KeyError:
-          return False  # Return False if the primary key is not in the index, indicating no such record.
+        # Since the primary_key exists, proceed with finding the base page.
+        basePage = self.table.getBasePage(primary_key)
+        if basePage is None:
+            return False  # Return False if the base page does not exist for the given primary key.
 
-      location = self.table.page_directory.locate(RID) # Finds the actual location of the record using RID.
-      if location is None:
-          return False  # Return False if no location found, indicating the record might not exist.
+        # Use the getRecord method to check if the record exists in the base page's metadata.
+        record = basePage.getRecord(primary_key)
+        if record is None:
+            return False  # Return False if the record does not exist within the base page.
 
-      # Performs the actual deletion operation here.
-      del self.table.page_directory[RID] # Remove the record from the page directory using RID.
-      del self.table.index[primary_key]  # Remove the primary key from the index, effectively deleting the record.
+        # Proceed to delete it from the base page's record metadata.
+        del basePage.record_metadata[primary_key]
 
-      return True  # Return True upon successful deletion.
+        # Call remove_NumRecords to decrement the number of records in the page after deletion.
+        basePage.remove_NumRecords()
+
+        # Remove the record from the page directory.
+        del self.table.page_directory[primary_key]
+
+        # Update the index to reflect the deletion.
+        # Use self.table.key to reference the primary key column.
+        self.table.index.remove(self.table.key, primary_key)
+
+        return True  # Return True upon successful deletion.
 
 
     """
