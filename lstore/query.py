@@ -114,7 +114,30 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
-        pass
+        records_list = []  # initialize list of Record objects to return
+        data_list = []  # initialize list 
+
+        current_bpage = self.table.getBasePage(search_key)  # gets current, most updated base page
+        current_record_metadata = current_bpage.getRecord(search_key)  # gets metadata of record
+
+        first_column = projected_columns_index.pop(0)  # first column value (0 or 1)
+        # if 0, append nothing; if 1, we return the key of the record metadata
+        if first_column == 0:
+            data_list.append(None)
+        else:
+            data_list.append(current_record_metadata.key)
+
+        byte_info = current_bpage.read_bytearray(current_bpage.data, current_record_metadata)  # gets data from bpage
+        for i in range(len(byte_info)):  # loop through the data
+            if projected_columns_index[i] == 1:
+                data_list.append(byte_info[i])  # if value is 1, then we append the byt info at given index 
+            else:
+                data_list.append(None)  # otherwise, we append None
+
+        data_list = current_record_metadata.columns  # get column data
+        records_list.append(current_record_metadata)  # append record metadata and return
+
+        return records_list
 
     
     """
