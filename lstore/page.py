@@ -15,7 +15,7 @@ class Page:
         return PAGE_SIZE-self.nextDataBlock     # return total remaining capacity
 
     def remove_NumRecords(self):               # remove record from page
-        self.num_records -= 1                   # decrement record count
+        self.num_records -= 1                  # decrement record count
         
 
     def fill_bytearray(self, byte_array, value_list, startloc):                         # function used to fill column data into bytearray()
