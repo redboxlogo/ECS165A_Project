@@ -102,7 +102,7 @@ if(sumFlag == True):
 
 ################################################################################################################################
 
-deleteFlag = True
+deleteFlag = False
 
 if(deleteFlag == True):
     # Measuring Delete Performance

@@ -51,25 +51,31 @@ class Query:
     # need to check for duplicate inserts
     def insert(self, *columns):
 
+        if(self.table.getBasePage(columns[0]) != None):
+            print("Record already in directory")
+            return False
+
+
         columns = list(columns)
         RID = columns[0]                                                # temp assignment POSSIBLE CHANGE 
         key = columns[0]                                                # temp assignment POSSIBLE CHANGE 
         columns.pop(0)                                                  # removing the key
-        schema_encoding = [0] * (self.table.num_columns-1)                  # assign schema encoding to new records
+        schema_encoding = [0] * (self.table.num_columns-1)              # assign schema encoding to new records
         newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
         if (self.table.page_directory == {}):
 
-            BaseP = self.table.newPage(-1)                          # create FIRST base page "-1"
+            BaseP = self.table.newPage(-1)                              # create FIRST base page "-1"
             BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page
             self.table.base_page.append(BaseP)                          # append page table of contents (only needs to be done for first page "-1")
             self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
+            return True
 
         else:
 
             BaseP = self.table.base_page[-1]                            # access the last base_page in the list "-1" DOES NOT REFER TO THE PAGE NUMBER
             BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page/ create new base page if first is full
             self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
-
+            return True
 
         
 
@@ -108,9 +114,14 @@ class Query:
     """
     def update(self, primary_key, *columns):
         
+        try:
+            basePage = self.table.getBasePage(primary_key)              # get the base page that contains the record
+        except:
+            print("key does not exist in directory")
+            return False
+
         updateColumns = list(columns)
         TailPage = self.table.getTailPage()                         # get/create last/new tail record
-        basePage = self.table.getBasePage(primary_key)              # get the base page that contains the record
         originalRecord = basePage.getRecord(primary_key)            # get the record from the base page
         baseRecCols = originalRecord.getallCols(basePage)           # get column data of base
         currTable = self.table

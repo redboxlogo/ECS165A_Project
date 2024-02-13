@@ -129,7 +129,7 @@ class Table:
                 return basePage                         # if write() success, return original base page
         except:
             print("Base setting failed")                # complete page setting failure 
-            return False                                #return false
+            return False                                # return false
 
     def newPage(self, pageID):
         returnPage = Page(pageID)                                          # create a base page

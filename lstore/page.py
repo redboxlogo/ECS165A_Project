@@ -56,6 +56,7 @@ class Page:
             returnRecord = self.record_metadata.get(searchKey) # get the page containing the location of record
         except:
             print("no Record location")
+            return False
         return returnRecord
         
     def updateMetadataKey(self, newKey, oldKey):
