@@ -2,6 +2,7 @@ from lstore.index import Index
 from lstore.page import Page
 from time import time
 from uuid import uuid4
+import logger
 
 INDIRECTION_COLUMN = 0
 RID_COLUMN = 1

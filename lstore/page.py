@@ -1,3 +1,4 @@
+import logger
 
 PAGE_SIZE = 4096
 
