@@ -118,7 +118,7 @@ class Query:
         else:
             data_list.append(current_record_metadata.key)
 
-        byte_info = current_bpage.read_bytearray(current_bpage.data, current_record_metadata)  # gets data from bpage
+        byte_info = current_bpage.read_bytearray(current_record_metadata)  # gets data from bpage
         for i in range(len(byte_info)):  # loop through the data
             if projected_columns_index[i] == 1:
                 data_list.append(byte_info[i])  # if value is 1, then we append the byt info at given index 
@@ -154,8 +154,12 @@ class Query:
         try:
             basePage = self.table.getBasePage(primary_key)              # get the base page that contains the record
         except:
+            print("failed to get base page")
             # logger.info("Update failed for Record, key does not exist in page directory, key: {}".format(primary_key))
             return False
+        
+        if(basePage == None):
+            print("key does not exist in directory")
 
         updateColumns = list(columns)
         TailPage = self.table.getTailPage()                         # get last/create new tail record
@@ -164,6 +168,7 @@ class Query:
         except:
             # logger.info("Update failed, key does not exist in page metadata key: {}".format(primary_key))
             return False
+            print("failed to get record")
         currTable = self.table
 
 
@@ -229,25 +234,39 @@ class Query:
     # Returns the summation of the given range upon success
     # Returns False if no record exists in the given range
     """
-    def sum(self, start_range, end_range, aggregate_column_index):
-        
-        total_sum = 0
-        
-        try:
-        
-            for key in range(start_range, end_range):
-            
-                record = self.table.index.locate(key, None)
-                
-                if record is not None:
-                
-                    total_sum += record.columns[aggregate_column_index]
-                    
-        except KeyError:
-            
-            return False  # key is not found
+    def sum(self, start_key, end_key, aggregate_column_index):
+        # print(aggregate_column_index)
+        sumList = []
+        aggregate_column_index -= 1
 
-        return total_sum
+        for i in range(start_key, end_key+1):
+           # Check if the primary key exists in the page directory
+            if i in self.table.page_directory:
+               # Get the base page for the current key
+               basePage = self.table.getBasePage(i)
+
+            if basePage is None:
+                print("cant find page")
+                return False
+
+            # Use the getRecord method to access the record
+            record = basePage.getRecord(i) 
+
+            if record is None:
+                print("cant find record with key:")
+                print(i)
+                return False
+
+            if aggregate_column_index == -1:                 # sum the key column
+                #use record.key for summing
+                sumList.append(record.key)
+            else:                                           # sum columns that are not the key
+
+                sumList.append(basePage.read_byte_by_index(record, aggregate_column_index))
+
+
+        # print(sumList)
+        return sum(sumList)
 
     
     """
