@@ -50,7 +50,7 @@ class Page:
         else:
             self.num_records += 1                                                                                                   # if remaining capacity is fine continue
             RecordObj.pageLocStart, RecordObj.pageLocEnd = self.fill_bytearray(self.data, RecordObj.columns, self.nextDataBlock)    # fill the byte array with data and return the (first element location) and (last element location +1)
-            self.record_metadata.update({RecordObj.key:self.recordColDel(RecordObj)})                                               # store dataless metadata for record
+            self.record_metadata.update({RecordObj.key:self.recordColDel(RecordObj)})                                               # store dataless metadata for record and clear record.columns with recordColDel()
             self.nextDataBlock = RecordObj.pageLocEnd                                                                               # update write head with new location
             return True
         

@@ -75,7 +75,8 @@ class Record:
         baseRecord = baseRecord.setIndirection(newTailRecord)                               # base record points to new tail record
         baseRecord = baseRecord.setSchemaCode(newSchema)                                    # set new schema code for base record
         baseRecord = baseRecord.updateBaseCols(basePage, baseColsList)                      # update data(byte array) in base page
-
+        
+        # baseRecord.columns = baseColsList
         
         # print(basePage.read_bytearray(basePage.data,baseRecord))
 
