@@ -16,10 +16,6 @@ class Page:
 
     def remove_NumRecords(self):               # remove record from page
         self.num_records -= 1                  # decrement record count
-
-    def convertIntToString(self, inputINT):
-        retString = str(inputINT)
-        return retString
         
 
     def fill_bytearray(self, byte_array, value_list, startloc):                         # function used to fill column data into bytearray()
@@ -29,7 +25,7 @@ class Page:
             byte_array[i] = value_list[i - start_index]   
         return start_index, last_index                                                  # return the start and last index
 
-    def read_bytearray(self,recordObj):                                                 # read data inside page bytearray()
+    def read_bytearray(self,recordObj):                                    # read data inside page bytearray()
         returnData = []                                                                 # initialize returnData list containing the data
         byte_array = self.data
         start_index = recordObj.getStart()                                              # get the start index of data inside bytearray
@@ -38,15 +34,15 @@ class Page:
             returnData.append(byte_array[i])                                            # full returnData list
         return returnData                                                               # return the returnData list
     
-    def read_byte_by_index(self, recordObj, column):                                    # read data inside page bytearray() for a specified column
+    def read_byte_by_index(self, recordObj, column):                        # read data inside page bytearray() for a specified column
         bytearr = self.data
         returnData = []
         start_index = recordObj.getStart()                                              # get the start index of data inside bytearray
         last_index = recordObj.getEnd()                                                 # get the end index of data inside bytearray
         returnval = bytearr[start_index + column] 
         for i in range(start_index, last_index):                                        # for loop to read byte_array
-            returnData.append(bytearr[i])                                               # full returnData list
-        return returnval                                                                # return the returnData list
+            returnData.append(bytearr[i])                                            # full returnData list
+        return returnval                                                               # return the returnData list
 
     def recordColDel(self, RecordObj):                                                  # delete column data from record object after writing to byte array
         RecordObj.columns = None
@@ -64,7 +60,7 @@ class Page:
             return False
         else:
             self.num_records += 1                                                                                                   # if remaining capacity is fine continue
-            RecordObj.colLocStart, RecordObj.colLocEnd = self.fill_bytearray(self.data, RecordObj.columns, self.nextDataBlock)    # fill the byte array with data and return the (first element location) and (last element location +1)
+            RecordObj.pageLocStart, RecordObj.pageLocEnd = self.fill_bytearray(self.data, RecordObj.columns, self.nextDataBlock)    # fill the byte array with data and return the (first element location) and (last element location +1)
             self.record_metadata.update({RecordObj.key:self.recordColDel(RecordObj)})                                               # store dataless metadata for record and clear record.columns with recordColDel()
             self.nextDataBlock = RecordObj.pageLocEnd                                                                               # update write head with new location
             return True
