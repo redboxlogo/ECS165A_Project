@@ -71,7 +71,7 @@ class Query:
 
         columns = list(columns)
         RID = columns[0]                                                # temp assignment POSSIBLE CHANGE 
-        key = columns[0]                                                # temp assignment POSSIBLE CHANGE 
+        key = columns[0]                                                # temp assignment POSSIBLE CHANGE key needs to go in bytearr
         columns.pop(0)                                                  # removing the key
         schema_encoding = [0] * (self.table.num_columns-1)              # assign schema encoding to new records
         newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
