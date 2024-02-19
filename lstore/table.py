@@ -14,19 +14,26 @@ class Record:
 
     def __init__(self, rid, schema_encoding, key, columns):     # default constructor for Record() obj
         self.rid = rid                                          # rid for identification
+        
         self.indirection = None                                 # pointer used to point to tail (if in Base page) or prior update (if in Tail page)
+        self.indirectionLocStart = None
+        self.indirectionLocEnd = None
+
         self.startTime = time()                                 # record creation time 
         self.startTimeLocStart = None
         self.startTimeLocEnd = None
+        
         self.schema_encoding = schema_encoding                  # schema_encoding to keep track of updates
         self.schema_encodingLocStart = None
         self.schema_encodingLocEnd = None
+        
         self.key = key                                          # key for dictonary updates
         self.keyLocStart = None
         self.keyLocEnd = None
+
         self.columns = columns                                  # column data will be empty after writing to page
-        self.colLocStart = None                                # bytearray index for start of record
-        self.colLocEnd = None                                  # bytearray index for (last element in columns + 1)
+        self.colLocStart = None                                 # bytearray index for start of record
+        self.colLocEnd = None                                   # bytearray index for (last element in columns + 1)
 
     def checkIndirection(self):                                 # boolean to check if an indirection exists inside a base record 
         if self.indirection == None:                            # if indirection does not exist  
@@ -97,7 +104,6 @@ class Record:
     
     def getEnd(self):                                                                       # get the end location for record data in base page            
         return self.pageLocEnd                                                              # return the end index of the record data in base page
-
 
     def keyCompression(self, keyInt):
         pass

@@ -59,10 +59,9 @@ class Query:
     # Return True upon succesful insertion
     # Returns False if insert fails for whatever reason
     """
-    # need to check for duplicate inserts
     def insert(self, *columns):
 
-        if(self.table.getBasePage(columns[0]) != None):
+        if(self.table.getBasePage(columns[0]) != None):                 #check for duplicates
             print("Record already in directory")
             #logger.info("failed to insert record with key: {}".format(self.table.getBasePage(columns[0])))
 
@@ -73,6 +72,7 @@ class Query:
         RID = columns[0]                                                # temp assignment POSSIBLE CHANGE 
         key = columns[0]                                                # temp assignment POSSIBLE CHANGE key needs to go in bytearr
         columns.pop(0)                                                  # removing the key
+        
         schema_encoding = [0] * (self.table.num_columns-1)              # assign schema encoding to new records
         newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
         if (self.table.page_directory == {}):

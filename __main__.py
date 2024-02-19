@@ -59,7 +59,7 @@ if(updateFlag == True):
 
 ################################################################################################################################
 
-selectFlag = True
+selectFlag = False
 
 if(selectFlag == True):
     # Measuring Select Performance
@@ -74,7 +74,7 @@ if(selectFlag == True):
 
 ################################################################################################################################
 
-sumFlag = True
+sumFlag = False
 
 if(sumFlag == True):
     # Measuring Aggregate Performance
@@ -91,7 +91,7 @@ if(sumFlag == True):
 
 ################################################################################################################################
 
-deleteFlag = True
+deleteFlag = False
 
 if(deleteFlag == True):
     # Measuring Delete Performance
