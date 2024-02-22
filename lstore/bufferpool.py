@@ -8,14 +8,23 @@ class Bufferpool():
         self.frame_directory = {}  # directory for frame is set to dictionary
         self.frame_count = 0  # frame count
 
-    def add_frame(self):
-        pass
-
     '''
     this function checks if our bufferpool is full
     returns True if full, returns False if not
     '''
     def full(self):
+        pass
+
+    def fetch_page(self, page_id):
+        # Implementation for fetching a page into the bufferpool
+        pass
+
+    def evict_page(self):
+        # Implementation for evicting a page from the bufferpool
+        pass
+
+    def flush_page(self, page_id):
+        # Implementation for writing a dirty page back to disk
         pass
 
 class Frame():
