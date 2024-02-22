@@ -1,5 +1,5 @@
-from page import Page
-from table import *
+from lstore.page import Page
+from lstore.table import *
 
 class Bufferpool():
 
