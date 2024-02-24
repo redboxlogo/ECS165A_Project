@@ -1,6 +1,9 @@
 from lstore.page import Page
 from lstore.table import *
 
+BUFFERPOOL_FRAME_COUNT = 100
+
+
 class Bufferpool():
 
     def __init__(self):
