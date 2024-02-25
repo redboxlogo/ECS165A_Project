@@ -2,6 +2,7 @@
 A data strucutre holding indices for various columns of a table. Key column should be indexd by default, other columns can be indexed through this object. Indices are usually B-Trees, but other data structures can be used as well.
 """
 
+
 class Index:
 
     def __init__(self, table):
@@ -45,15 +46,16 @@ class Index:
         pass
 
     """
-    # optional: Create index on specific column
+    # Create index on specific column
     """
 
     def create_index(self, column_number):
+        
         pass
 
     """
-    # optional: Drop index of specific column
+    #  Drop index of specific column
     """
 
     def drop_index(self, column_number):
-        pass
+        self.indices[column_number] = None
