@@ -3,7 +3,7 @@ from lstore.table import Table
 class Database():
 
     def __init__(self):
-        self.tables = []
+        self.tables = {}
         pass
 
     # Not required for milestone1
@@ -28,11 +28,12 @@ class Database():
     # Deletes the specified table
     """
     def drop_table(self, name):
-        pass
+        self.tables[name] = None
+        return True
 
     
     """
     # Returns table with the passed name
     """
     def get_table(self, name):
-        pass
+        return self.tables[name]
