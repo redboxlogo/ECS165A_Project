@@ -16,7 +16,12 @@ class Bufferpool():
     returns True if full, returns False if not
     '''
     def full(self):
-        pass
+        # Checks if the buffer pool is full by comparing the current number of frames
+        # against the maximum allowed frames defined by BUFFERPOOL_FRAME_COUNT.
+        # Returns True if the number of frames is greater than or equal to the maximum allowed,
+        # indicating the buffer pool is full.
+        # Returns False otherwise, indicating there is still space available.
+        return len(self.frames) >= BUFFERPOOL_FRAME_COUNT
 
     def fetch_page(self, page_id):
         # Implementation for fetching a page into the bufferpool
