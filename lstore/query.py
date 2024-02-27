@@ -99,12 +99,22 @@ class Query:
             newRecord.indirectionLocStart = newRecord.ridLocStart
             newRecord.indirectionLocEnd = newRecord.ridLocEnd
 
+            newRecord.page_range_indexNUM = recentRange.key
+            newRecord.base_page_indexNUM = basePagesNUM
+
             for i in range(self.table.num_columns-1):
                 recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
 
+            self.table.page_directory.update({newRecord.key:recentRange.base_page[basePagesNUM]})     # update page directory with new key and page address
+            
+            
+            
+            self.table.temp_record_directory.update({newRecord.key:newRecord})     # update page directory with new key and page address
+
+            # insert record object into index
+
             return True
 
-        # self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
 
         return True
         # logger.info("new record inserted to Base Page with key: {}".format(newRecord.key))
@@ -179,20 +189,36 @@ class Query:
             print("key does not exist in directory")
 
         updateColumns = list(columns)
-        TailPage = self.table.getTailPage()                         # get last/create new tail record
-        try:
-            originalRecord = basePage.getRecord(primary_key)            # get the record from the base page
-        except:
-            # logger.info("Update failed, key does not exist in page metadata key: {}".format(primary_key))
-            return False
-            print("failed to get record")
-        currTable = self.table
+
+        recordObj = self.table.temp_record_directory.get(primary_key)
+
+        currRange = self.table.page_ranges[recordObj.page_range_indexNUM]
+
+        # print(currRange.base_page[recordObj.base_page_indexNUM])
+        # print(basePage)
+
+        currTailPage = currRange.tail_page[recordObj.base_page_indexNUM]
+
+        indices_not_none = [index for index, value in enumerate(updateColumns) if value is not None]
+        print(indices_not_none)
+
+
+        # tailPage = currPageRange.tail_page[]
+        
+        # TailPage = self.table.getTailPage()                         # get last/create new tail record
+        # try:
+        #     originalRecord = basePage.getRecord(primary_key)            # get the record from the base page
+        # except:
+        #     # logger.info("Update failed, key does not exist in page metadata key: {}".format(primary_key))
+        #     return False
+        #     print("failed to get record")
+        # currTable = self.table
 
 
 
-        if(updateColumns[0] == -999):                                         # condition for delete record
+        # if(updateColumns[0] == -999):                                         # condition for delete record
             
-            pass        
+            # pass        
 
         # if(updateColumns[0] != None):                                       # potentially perform a key update
         #     print("updating key")
@@ -210,37 +236,37 @@ class Query:
 
 
 
-        indirectionExists = originalRecord.checkIndirection()                                           # check for pre-existing indirection pointer
-        if(indirectionExists == True):                                                                  # if indirection pointer exists, do a pointer redirection
-            TailRec = originalRecord.getIndirection()                                                   # if indirection from base record exists, store in "TailRec"
-            newTailRec = TailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)    # add new tail record and update base page with new tail record
-            writeSucc = TailPage.write(newTailRec)                                                      # writeSucc == true if write was successful; false if page is full
-            if(writeSucc == False):                                                                     # if write() failed
-                newID = TailPage.directoryID-1                                                          # create new basepage ID 
-                newTailPage = self.table.newPage(newID)                                                 # create new tail page
-                self.table.tail_page.append(newTailPage)                                                # append new tail page to tail page list
-                newTailPage.write(newTailRec)                                                           # write record to new tail page
-                # logger.log("New Tail created with key: {}".format(newID))
-            # logger.info("Updated Record with key: {}".format(primary_key))
+        # indirectionExists = originalRecord.checkIndirection()                                           # check for pre-existing indirection pointer
+        # if(indirectionExists == True):                                                                  # if indirection pointer exists, do a pointer redirection
+        #     TailRec = originalRecord.getIndirection()                                                   # if indirection from base record exists, store in "TailRec"
+        #     newTailRec = TailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)    # add new tail record and update base page with new tail record
+        #     writeSucc = TailPage.write(newTailRec)                                                      # writeSucc == true if write was successful; false if page is full
+        #     if(writeSucc == False):                                                                     # if write() failed
+        #         newID = TailPage.directoryID-1                                                          # create new basepage ID 
+        #         newTailPage = self.table.newPage(newID)                                                 # create new tail page
+        #         self.table.tail_page.append(newTailPage)                                                # append new tail page to tail page list
+        #         newTailPage.write(newTailRec)                                                           # write record to new tail page
+        #         # logger.log("New Tail created with key: {}".format(newID))
+        #     # logger.info("Updated Record with key: {}".format(primary_key))
 
-            return True
+            # return True
         
-        else:                                                                                               # if indirection pointer doesnt exist
-            baseRecCols = originalRecord.getallCols(basePage)                                               # get column data of base
-            TailPage = self.table.setTailPage(TailPage, originalRecord, baseRecCols)                        # create first copy of original record in Tail page and return said record page
-            firstTailRec = originalRecord.getIndirection()                                                  # get first copy of record in Tail page
-            newTailRec = firstTailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)   # add new tail record and update base page with new tail record
-            writeSucc = TailPage.write(newTailRec)                                                          # writeSucc == true if write was successful; false if page is full
-            if(writeSucc == False):                                                                         # if write() failed
-                newID = TailPage.directoryID-1                                                              # create new basepage ID 
-                newTailPage = self.table.newPage(newID)                                                     # create new tail page
-                self.table.tail_page.append(newTailPage)                                                    # append new tail page to tail page list
-                newTailPage.write(newTailRec)                                                               # write record to new tail page
-                # logger.log("New Tail created with key: {}".format(newID))
-            # logger.info("Updated Record with key: {}".format(primary_key))
+        # else:                                                                                               # if indirection pointer doesnt exist
+            # baseRecCols = originalRecord.getallCols(basePage)                                               # get column data of base
+            # TailPage = self.table.setTailPage(TailPage, originalRecord, baseRecCols)                        # create first copy of original record in Tail page and return said record page
+            # firstTailRec = originalRecord.getIndirection()                                                  # get first copy of record in Tail page
+            # newTailRec = firstTailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)   # add new tail record and update base page with new tail record
+            # writeSucc = TailPage.write(newTailRec)                                                          # writeSucc == true if write was successful; false if page is full
+            # if(writeSucc == False):                                                                         # if write() failed
+            #     newID = TailPage.directoryID-1                                                              # create new basepage ID 
+            #     newTailPage = self.table.newPage(newID)                                                     # create new tail page
+            #     self.table.tail_page.append(newTailPage)                                                    # append new tail page to tail page list
+            #     newTailPage.write(newTailRec)                                                               # write record to new tail page
+            #     # logger.log("New Tail created with key: {}".format(newID))
+            # # logger.info("Updated Record with key: {}".format(primary_key))
 
             # print(TailPage.read_bytearray(TailPage.data,newTailRec))
-            return True
+            # return True
 
     
     """

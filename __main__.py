@@ -29,7 +29,7 @@ insertFlag = True
 if(insertFlag == True):
     insert_time_0 = time()                                              #get time
     print(insert_time_0)
-    for i in range(0, 1000000):                                                   #for loop for query inserts and key appends
+    for i in range(0, 10000):                                                   #for loop for query inserts and key appends
         query.insert(906659671 + i, 93, 0, 0, 0)                                #call insert(self, *columns) from query
         keys.append(906659671 + i)                                              #call append() from key
     insert_time_1 = time()                                              #get time
@@ -38,10 +38,9 @@ if(insertFlag == True):
     print("Inserting 1M records took:  \t\t\t", insert_time_1 - insert_time_0) #print
 
 
-
 ################################################################################################################################
 
-updateFlag = False
+updateFlag = True
 
 if(updateFlag == True):
     # Measuring update Performance
@@ -56,7 +55,7 @@ if(updateFlag == True):
     update_time_0 = time()                                              #get time 
     print(update_time_0)
 
-    for i in range(0, 1000000):                                                   #update 10k queries
+    for i in range(0, 10000):                                                   #update 10k queries
         query.update(906659671+i, *(choice(update_cols)))                      #call update() from query
     update_time_1 = time()                                              #get time
     print(update_time_1)

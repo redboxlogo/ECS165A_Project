@@ -33,6 +33,9 @@ class Record:
         self.colLocStart = None                                 # bytearray index for start of record
         self.colLocEnd = None                                   # bytearray index for (last element in columns + 1)
 
+        self.page_range_indexNUM = None
+        self.base_page_indexNUM = None
+
     def checkIndirection(self):                                 # boolean to check if an indirection exists inside a base record 
         if self.indirection == None:                            # if indirection does not exist  
             return False                                        # return False
@@ -122,6 +125,9 @@ class PageRange:
         for i in range(num_columns - 1):
             default_names.append(f"data_column {i + 1}")
         self.base_page = [[Page(name) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
+        # self.tail_page = [None] * PAGE_RANGE_SIZE
+
+        self.tail_page = [[None for i in range(len(default_names))] for _ in range(PAGE_RANGE_SIZE)]
 
     def capacity_check(self):
         if(self.base_page[-1][RID_COLUMN].num_records == 256):
@@ -176,6 +182,7 @@ class Table:
         self.key = key                                  # set table key
         self.num_columns = num_columns                  # number of columns
         self.page_directory = {}                        # dictionary given a record key, it should return the page address/location
+        self.temp_record_directory = {}                 # temp directory while index is being built
         self.page_ranges = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
         self.index = Index(self)
 
