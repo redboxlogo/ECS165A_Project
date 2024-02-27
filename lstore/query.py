@@ -240,37 +240,39 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_key, end_key, aggregate_column_index):
-        # print(aggregate_column_index)
         sumList = []
         aggregate_column_index -= 1
+        found_valid_data = False  # Flag to track if any valid data is aggregated
 
-        for i in range(start_key, end_key+1):
-           # Check if the primary key exists in the page directory
+        for i in range(start_key, end_key + 1):
+            base_page = None
             if i in self.table.page_directory:
-               # Get the base page for the current key
-               basePage = self.table.getBasePage(i)
+                base_page = self.table.getBasePage(i)
 
-            if basePage is None:
-                print("cant find page")
-                return False
+            if base_page is None:
+                print(f"Can't find page for key: {i}")
+                sumList.append(0)  # Reflect missing page in aggregation
+                continue  # Proceed to the next key in the range
 
-            # Use the getRecord method to access the record
-            record = basePage.getRecord(i) 
-
+            record = base_page.getRecord(i)
             if record is None:
-                print("cant find record with key:")
-                print(i)
-                return False
+                print(f"Can't find record with key: {i}")
+                sumList.append(0)  # Reflect missing record in aggregation
+                continue  # Proceed to the next key in the range
 
-            if aggregate_column_index == -1:                 # sum the key column
-                #use record.key for summing
+            # A valid record is found, process it
+            found_valid_data = True
+            if aggregate_column_index == -1:
                 sumList.append(record.key)
-            else:                                           # sum columns that are not the key
+            else:
+                value = base_page.read_byte_by_index(record, aggregate_column_index)
+                sumList.append(value)
 
-                sumList.append(basePage.read_byte_by_index(record, aggregate_column_index))
+        # After processing the range, check if any valid data was aggregated
+        if not found_valid_data:
+            return False  # No valid data found in the entire range
 
-
-        # print(sumList)
+        # Return the total sum of aggregated data
         return sum(sumList)
 
     
