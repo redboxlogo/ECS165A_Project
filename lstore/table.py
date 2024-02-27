@@ -163,15 +163,30 @@ class Table:
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-    def __init__(self, name, num_columns, key):
-        self.name = name                                # set name of table
-        self.key = key                                  # set table key
-        self.num_columns = num_columns                  # number of columns
-        self.page_directory = {}                        # dictionary given a record key, it should return the page address/location
-        self.page_ranges = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
+        def __init__(self, name, num_columns, key, path=None, bufferpool=None):
+        self.name = name  # set name of table
+        self.table_path = path
+        self.key = key  # set table key
+        self.num_columns = num_columns  # number of columns
+        self.col_names = {
+            0: 'Indirection',
+            1: 'RID',
+            2: 'Timestamp',
+            3: 'Schema'
+        }
+        self.num_records = 0
+        self.num_brecords = 0
+        self.num_trecords = 0
+        self.page_directory = {}  # dictionary given a record key, it should return the page address/location
+        self.num_pranges = 0
+        self.prange_data = {}
+        self.prange = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
+        self.base_page = []  # list of Base page objects
+        self.tail_page = []  # list of Tail page objects
         self.index = Index(self)
-
-        return None
+        self.record_lock = threading.Lock()
+        self.bufferpool = bufferpool
+        self.table_path = path
         
 
     def __merge(self):
@@ -247,3 +262,32 @@ class Table:
     def updatePageDirectory(self, newKey, oldKey):
         self.page_directory[newKey] = self.page_directory.pop(oldKey) # Create a new key-value pair with the updated key and value
         return self
+
+    # stores table data in a dictionary for table_directory
+    def stores_table_data(self):
+        table_data = {
+            "name": self.name,
+            "key": self.key,
+            "table_path": self.table_path,
+            "num_columns": self.num_columns,
+            "column_names": self.col_names,
+            "num_records": self.num_records,
+            "num_base_records": self.num_brecords,
+            "num_tail_records": self.num_trecords,
+            "num_page_ranges": self.num_pranges,
+            "page_range_data": self.prange_data,
+        }
+        self.page_directory["table_data"] = table_data
+
+    # fills in table with its specific data
+    def fill_in_table_data(self, table_data):
+        self.name = table_data["name"]
+        self.key = table_data["key"]
+        self.table_path = table_data["table_path"]
+        self.num_columns = table_data["num_columns"]
+        self.col_names = table_data["column_names"]
+        self.num_records = table_data["num_records"]
+        self.num_brecords = table_data["num_base_records"]
+        self.num_trecords = table_data["num_tail_records"]
+        self.num_page_ranges = table_data["num_page_ranges"]
+        self.page_range_data = table_data["page_range_data"]
