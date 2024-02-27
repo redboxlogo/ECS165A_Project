@@ -4,6 +4,7 @@ import os
 import shutil
 import json
 import pickle
+from threading import Lock
 
 class Database():
 
@@ -12,6 +13,7 @@ class Database():
         self.bufferpool = None
         self.table_directory = {}  # maps table names to table information
         self.root = None  # name of the root node
+        self.locks = {}  # Dictionary to store locks for each table
         pass
 
     # Not required for milestone1
@@ -54,8 +56,35 @@ class Database():
             self.root = root_path
 
     def close(self):
-        
-        pass
+        # Iterate through tables and grab all index values
+        index_values = []
+        for table in self.tables:
+            index_values.extend(table.get_index_values())
+        # Write dirty pages back into the disk
+        for table in self.tables:
+            table.flush_page()
+        # Save table directory to disk
+        file_path = f"{self.root_name}/table_directory.pkl"
+        with open(file_path, "wb") as pkl_file:
+            pickle.dump(self.table_directory, pkl_file)
+        # Release memory
+        self.tables = []
+        self.bufferpool = None
+        self.root_name = None
+        self.table_directory = {}
+
+    def acquire_lock(self, table_name):
+        if table_name not in self.locks:
+            self.locks[table_name] = Lock()
+        self.locks[table_name].acquire()
+
+    def release_lock(self, table_name):
+        if table_name in self.locks:
+            self.locks[table_name].release()
+
+    def release_locks(self, table):
+        table_name = table.name
+        self.release_lock(table_name)
 
     """
     # Creates a new table
