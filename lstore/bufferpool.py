@@ -1,23 +1,24 @@
-from lstore.page import Page
+from lstore.page import *
 from lstore.table import *
 
 BUFFERPOOL_FRAME_COUNT = 100
 
 
-class Bufferpool():
+class Bufferpool:
 
-    def __init__(self):
+    def __init__(self, path2root):
         self.frames = []  # frame
         self.frame_directory = {}  # directory for frame is set to dictionary
         self.frame_count = 0  # frame count
+        self.path2root = path2root
 
     '''
     passes frames to frame directory
     '''
-    def frame_to_dict(self, table_name, bpage, brecord, frame_index):  # maybe add in page range?
-        frame_key = (table_name, bpage, brecord)
+    def frame_to_dict(self, table_name, prange, bpage, brecord, frame_index):
+        frame_key = (table_name, prange, bpage, brecord)
         self.frame_directory[frame_key] = frame_index 
-        self.frames[frame_index].tuple_key = frame_key
+        self.frames[frame_index].keyupd = frame_key
 
         if self.frame_count < BUFFERPOOL_FRAME_COUNT:
             self.frame_count += 1
@@ -32,6 +33,20 @@ class Bufferpool():
             return True
         else:
             return False
+
+    # getter function: returns the index of the bufferpool frame a record exists in
+    def get_page_frame(self, table_name, record_data):
+        # check if record is a base record
+        # get the page range record exists in
+
+        # if base:
+            # get index of base page
+        # else:
+            # get index of tail page
+
+        # get all the frame info = (table_name, prange, bpage, brecord)
+        # return self.frame_directory(info)
+        pass
 
     def fetch_page(self, page_id):
         # Implementation for fetching a page into the bufferpool
@@ -71,7 +86,20 @@ class Bufferpool():
         return frame_index  # returns index of frame that was evicted
         pass
 
-class Frame():
+    def commit_page(self, index):  # passes in index of frame, commits the page to disk
+        current_frame = self.frames[index]  # identify frame we wish to commit
+        all_cols = current_frame.cols  # get all column data
+        path2page = current_frame.disk_path2page  # get the path to page on disk for the frame
+        if current_frame.dirty:  # if the frame is dirty
+            write_to_disk(path2page, all_cols)  # write them to disk
+
+    def commit_frames(self):  # commits all frames when closing the database
+        for index in range(len(self.frames)):  # iterate through all frames
+            if self.frames[index].dirty:  # if frame is dirty
+                self.commit_page(index)  # commit it to disk
+
+
+class Frame:
 
     def __init__(self, table_name, disk_path2page):
         self.cols = []  # all column data
@@ -79,7 +107,7 @@ class Frame():
         self.pinned = False  # indicates whether a frame is pinned or unpinned
         self.time = 0  # records time in bufferpool
         self.access_count = 0  # number of times page has been accessed
-        self.tuple_key = None  # holds a tuple key that uniquely identifies the frame; temporary
+        self.key = None  # holds a tuple key that uniquely identifies the frame; temporary
         self.disk_path2page = disk_path2page  # path to page on disk
         self.table_name = table_name  # name of table associated with frame
 

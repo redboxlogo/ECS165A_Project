@@ -4,6 +4,7 @@ from time import time
 from uuid import uuid4
 from lstore.logger import logger
 import threading
+import pickle
 
 INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
@@ -156,32 +157,31 @@ class Table:
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-    def __init__(self, name, num_columns, key):
-        def __init__(self, name, num_columns, key, path=None, bufferpool=None):
-            self.name = name  # set name of table
-            self.table_path = path
-            self.key = key  # set table key
-            self.num_columns = num_columns  # number of columns
-            self.col_names = {
-                0: 'Indirection',
-                1: 'RID',
-                2: 'Timestamp',
-                3: 'Schema'
-            }
-            self.num_records = 0
-            self.num_brecords = 0
-            self.num_trecords = 0
-            self.page_directory = {}  # dictionary given a record key, it should return the page address/location
-            self.num_pranges = 0
-            self.prange_data = {}
-            self.prange = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
-            self.base_page = []  # list of Base page objects
-            self.tail_page = []  # list of Tail page objects
-            self.index = Index(self)
-            self.record_lock = threading.Lock()
-            self.bufferpool = bufferpool
-            self.table_path = path
-            return None
+
+    def __init__(self, name, num_columns, key, path=None, bufferpool=None):
+        self.name = name  # set name of table
+        self.table_path = path
+        self.key = key  # set table key
+        self.num_columns = num_columns  # number of columns
+        self.col_names = {
+            0: 'Indirection',
+            1: 'RID',
+            2: 'Timestamp',
+            3: 'Schema'
+        }
+        self.num_records = 0
+        self.num_brecords = 0
+        self.num_trecords = 0
+        self.page_directory = {}  # dictionary given a record key, it should return the page address/location
+        self.num_pranges = 0
+        self.prange_data = {}
+        self.prange = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
+        self.base_page = []  # list of Base page objects
+        self.tail_page = []  # list of Tail page objects
+        self.index = Index(self)
+        self.record_lock = threading.Lock()
+        self.bufferpool = bufferpool
+        self.table_path = path
 
         return None
         
@@ -286,5 +286,16 @@ class Table:
         self.num_records = table_data["num_records"]
         self.num_brecords = table_data["num_base_records"]
         self.num_trecords = table_data["num_tail_records"]
-        self.num_page_ranges = table_data["num_page_ranges"]
-        self.page_range_data = table_data["page_range_data"]
+        self.num_pranges = table_data["num_page_ranges"]
+        self.prange_data = table_data["page_range_data"]
+
+    def table_page_dir_to_disk(self):
+        """
+        Function that writes the Table's page_directory to disk
+        """
+        self.stores_table_data()
+        page_dir_file = open(f"{self.table_path}/page_directory.pkl", "wb")
+        pickle.dump(self.page_directory, page_dir_file)
+        page_dir_file.close()
+
+

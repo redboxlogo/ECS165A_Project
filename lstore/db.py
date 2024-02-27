@@ -5,11 +5,12 @@ import shutil
 import json
 import pickle
 
-class Database():
+
+class Database:
 
     def __init__(self):
         self.tables = {}  # stores table data
-        self.bufferpool = None
+        self.bufferpool = None  # sets bufferpool
         self.table_directory = {}  # maps table names to table information
         self.root = None  # name of the root node
         pass
@@ -29,13 +30,14 @@ class Database():
             If the path exists and is a directory, os.path.isdir() returns True.
             If the path does not exist or is not a directory, os.path.isdir() returns False.
             """
-            self.root_name = root_path  # set root name to the path
+            self.root = root_path  # set root name to the path
             with os.scandir(root_path) as entries:  # iterate over the entries in a directory
                 for entry in entries:
                     file_path = f"{root_path}/table_directory.pkl"  # access file path
                     if entry.path == file_path:
                         with open(file_path, "rb") as pkl_file:
                             self.table_directory = pickle.load(pkl_file)
+                    self.fill_table()
             """
             os.scandir() is a function provided by the os module in Python, introduced in Python 3.5. 
             It is used for efficiently iterating over the contents of a directory.
@@ -47,14 +49,18 @@ class Database():
            DirEntry Object:
            Each DirEntry object contains information about a specific directory entry, including its name and attributes.
             """
-                 # self.fill_table()
 
         else:
             os.mkdir(root_path)
             self.root = root_path
 
+    '''
+    ensures that the database is properly closed, 
+    metadata is saved, 
+    changes are flushed to disk, 
+    and any memories are released
+    '''
     def close(self):
-        
         pass
 
     """
@@ -69,10 +75,26 @@ class Database():
             if table.name == name:  # If a table with the given name is found
                 # Raise an exception to indicate a table with this name already exists
                 raise Exception(f"Table '{name}' already exists.")
+
+        table_path = f"{self.root}/{name}"  # write name of path for the table
+        if os.path.isdir(table_path):  # if table_path exists in directory
+            raise Exception(f"Table name, {name}, already exists.")
+        else:
+            os.mkdir(table_path)  # make the directory
         
         # If no table with the same name exists, proceed to create a new table
-        table = Table(name, num_columns, key_index)  # Create a new Table object
-        self.tables.append(table)  # Add the newly created table to the list of tables in the database
+        table = Table(name, num_columns, key_index, table_path, self.bufferpool)  # Create a new Table object
+        table.index.create_index(0)  # get index of table (should exist in primary column)
+        self.tables[name] = table
+        # self.tables.append(table)  # Add the newly created table to the list of tables in the database
+
+        # add to table directory
+        self.table_directory[name] = {
+            "name": name,
+            "table_path_name": table_path,
+            "num_columns": num_columns,
+            "key": key_index
+        }
         
         # Return the newly created table object
         return table
@@ -86,8 +108,7 @@ class Database():
             table_path = self.table_directory[table_name].get("table_path_name")
             num_columns = self.table_directory[table_name].get("num_columns")
             table_key = self.table_directory[table_name].get("key")
-            placeholder = Table(name=table_name, num_columns=num_columns, key=table_key, path=table_path,
-                            bufferpool=self.bufferpool, is_new=False)
+            placeholder = Table(table_name, num_columns, table_key, table_path, self.bufferpool)
             path2page_dir = f"{table_path}/page_directory.pkl"
             with open(path2page_dir, "rb") as page_dir:
                 placeholder.page_dir = pickle.load(page_dir)
@@ -106,13 +127,16 @@ class Database():
     # Deletes the specified table
     """
     def drop_table(self, name):
-        # Iterate through the list of tables to find the one with the matching name
-        for i, table in enumerate(self.tables):
-            if table.name == name:
-                del self.tables[i]  # Delete the table from the list if found
-                return  # Exit the method after deleting the table
-        # If the table with the specified name was not found, raise an error
-        raise KeyError(f"Table '{name}' does not exist.")
+        if name in self.table_directory:  # check if table name in directory
+            table_dir = self.table_directory[name]["table_path"]  # get the table directory path
+            if os.path.isdir(table_dir):  # if directory exists
+                shutil.rmtree(table_dir)  # delete the directory
+                del self.table_dir[name]  # delete table name from directory
+                del self.tables[name]  # delete table name from table dictionary
+                return True
+
+        print("Unable to drop table")
+        return False
 
     """
     # Returns table with the passed name
