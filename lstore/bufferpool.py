@@ -33,19 +33,19 @@ class Bufferpool():
         else:
             return False
 
-    def fetch_page(self, page_id):
-       # Check if the page is already in the buffer pool
+    def fetch_page(self, table_name, file_path, bpage, brecord):
+        # Check if the page is already in the buffer pool
         for frame in self.frames:
-            if frame.tuple_key == page_id:
+            if frame.tuple_key == (table_name, bpage, brecord):  # Adjust tuple key comparison
                 frame.access_count += 1  # Increment access count since the page is accessed
                 return frame
 
         # If the page is not in the buffer pool, fetch it from disk
         if not self.full():
             # Create a new frame
-            new_frame = Frame(page_id[0], page_id[1])  # Assuming page_id is a tuple (table_name, bpage, brecord)
-            # Load the page content into the frame (You need to implement this logic)
-            # For example: new_frame.load_page_content(page_content)
+            new_frame = Frame(table_name, file_path)  # Assuming page_id is a tuple (table_name, file_path, bpage, brecord)
+            # Load the page content into the frame
+            new_frame.read_from_disk(file_path, bpage)  # Assuming file_path is file_path, bpage is bpage
             # Set the frame as dirty since it's fetched from disk
             new_frame.set_dirty()
             # Pin the frame as it's being used
@@ -59,13 +59,13 @@ class Bufferpool():
             evicted_frame_index = self.evict_page()
             # Fetch the page from disk and load it into the evicted frame
             evicted_frame = self.frames[evicted_frame_index]
-            # For example: evicted_frame.load_page_content(page_content)
+            evicted_frame.read_from_disk(file_path, bpage)  # Assuming file_path is file_path, bpage is bpage
             # Set the frame as dirty since it's fetched from disk
             evicted_frame.set_dirty()
             # Pin the frame as it's being used
             evicted_frame.pin()
             # Update the frame directory with the new page_id
-            self.frame_directory[page_id] = evicted_frame
+            self.frame_directory[(table_name, bpage, brecord)] = evicted_frame  # Adjust tuple key
             return evicted_frame
 
 
