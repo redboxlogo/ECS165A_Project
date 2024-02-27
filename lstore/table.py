@@ -3,25 +3,21 @@ from lstore.page import Page
 from time import time
 from uuid import uuid4
 from lstore.logger import logger
+from lstore.config import *
 
-INDIRECTION_COLUMN = 0
-RID_COLUMN = 1
-TIMESTAMP_COLUMN = 2
-SCHEMA_ENCODING_COLUMN = 3
-
-
-PAGE_RANGE_SIZE = 8
 
 class Record:
 
     def __init__(self, rid, schema_encoding, key, columns):     # default constructor for Record() obj
         self.rid = rid                                          # rid for identification
+        self.ridLocStart = None
+        self.ridLocEnd = None
         
         self.indirection = None                                 # pointer used to point to tail (if in Base page) or prior update (if in Tail page)
         self.indirectionLocStart = None
         self.indirectionLocEnd = None
 
-        self.startTime = time()                                 # record creation time 
+        self.startTime = int(time())                                 # record creation time 
         self.startTimeLocStart = None
         self.startTimeLocEnd = None
         
@@ -107,9 +103,6 @@ class Record:
     def getEnd(self):                                                                       # get the end location for record data in base page            
         return self.pageLocEnd                                                              # return the end index of the record data in base page
 
-    def keyCompression(self, keyInt):
-        pass
-
 
 class PageRange:
     """
@@ -123,35 +116,50 @@ class PageRange:
         self.key = pr_key
         self.num_tail_pages = 0
         self.num_tail_records = 0
-
         # Default page names
         default_names = ["INDIRECTION","RID", "TIME", "SCHEMA", "KEY"]
-
         # Generate additional page names
         for i in range(num_columns - 1):
             default_names.append(f"data_column {i + 1}")
-        self.base_page = [[Page(name) for name in default_names] * PAGE_RANGE_SIZE]
+        self.base_page = [[Page(name) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
 
+    def capacity_check(self):
+        if(self.base_page[-1][RID_COLUMN].num_records == 256):
+            return False
+        else:
+            return True
+        
+    def insert_colElement(self,colData:int, page:Page):
+        ElementIndex, nextByte = page.fill_bytearray(colData)
+        return ElementIndex
 
+    # function to insert information larger than a single byte
+    def insert_long(self, primary_key:int , page:Page):
+        startIndex, endIndex = page.parse_integer_to_nibbles(primary_key)
+        return startIndex, endIndex
 
-
-
-
-
+    def insert_RID(self, RID:hex , page:Page):
+        startIndex, endIndex = page.store_hex_in_bytearray(RID)
+        return startIndex, endIndex
     
+    def insert_schema(self, schema:str, page:Page):
+        
+        numCols = len(schema)
 
-    def set_page(self, row, col, page_obj):
-        if 0 <= row < self.size and 0 <= col < self.size:
-            self.page_lists[row][col] = page_obj
-        else:
-            print("Invalid row or column index.")
+        # Convert the series of zeros to binary
+        binary_representation = int(schema, 2)
 
-    def get_page(self, row, col):
-        if 0 <= row < self.size and 0 <= col < self.size:
-            return self.page_lists[row][col]
-        else:
-            print("Invalid row or column index.")
-            return None
+        # Calculate the number of bytes needed
+        num_bytes = (numCols + 7) // 8
+
+        startIndex, endIndex = page.space_allocation(num_bytes)
+
+        # # Convert to bytes
+        # byte_value = binary_representation.to_bytes(num_bytes, byteorder='big')
+
+
+        return startIndex, endIndex
+
 
     
 # Each Table should have both Base and Tail pages 
@@ -177,6 +185,12 @@ class Table:
     def __merge(self):
         print("merge is happening")
         pass
+
+    def newPageRange(self):
+        mostRecent = self.page_ranges[-1]
+        newRange = PageRange(num_columns=mostRecent.num_columns, parent_key=mostRecent.table_key, pr_key=(mostRecent.key+1))
+        self.page_ranges.append(newRange)
+        return newRange
     
     # helper function to set Base record after insert retaining read-only properties of base page
     def setBase(self, basePage, insertRecord):
