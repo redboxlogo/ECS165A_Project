@@ -78,6 +78,31 @@ class Database():
         return table
 
     """
+    populates a table object with data from disk
+    """
+
+    def fill_table(self):
+        for table_name in self.table_directory:
+            table_path = self.table_directory[table_name].get("table_path_name")
+            num_columns = self.table_directory[table_name].get("num_columns")
+            table_key = self.table_directory[table_name].get("key")
+            placeholder = Table(name=table_name, num_columns=num_columns, key=table_key, path=table_path,
+                            bufferpool=self.bufferpool, is_new=False)
+            path2page_dir = f"{table_path}/page_directory.pkl"
+            with open(path2page_dir, "rb") as page_dir:
+                placeholder.page_dir = pickle.load(page_dir)
+            page_dir.close()
+
+            table_data = placeholder.page_dir["table_data"]
+            placeholder.fill_in_table_data(table_data)
+
+            # read index from disk
+            indices_path = f"{table_path}/indices.pkl"
+            with open(indices_path, "rb") as stored_index:
+                placeholder.index = pickle.load(stored_index)
+            self.tables[table_name] = placeholder
+
+    """
     # Deletes the specified table
     """
     def drop_table(self, name):
