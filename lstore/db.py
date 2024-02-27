@@ -29,7 +29,7 @@ class Database():
             If the path exists and is a directory, os.path.isdir() returns True.
             If the path does not exist or is not a directory, os.path.isdir() returns False.
             """
-            self.root_name = root_path  # set root name to the path
+            self.root = root_path  # set root name to the path
             with os.scandir(root_path) as entries:  # iterate over the entries in a directory
                 for entry in entries:
                     file_path = f"{root_path}/table_directory.pkl"  # access file path
