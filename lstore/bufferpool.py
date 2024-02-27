@@ -38,11 +38,37 @@ class Bufferpool():
         pass
 
     def evict_page(self):
-        # Implementation for evicting a page from the bufferpool
-        pass
+        LUP = self.frames[0]  # last used page as first page in list of frames
+        index = 0  # index of page
+        frame_index = 0  # index of frame
+        min_count = LUP.access_count  # initialize minimum count to how often the last used page was accessed
 
-    def flush_page(self, page_id):
-        # Implementation for writing a dirty page back to disk
+        for frame in self.frames:
+            if frame.access_count < min_count:
+                # if the access count of the current frame is less than the minimum count
+                # we set the last used page to the current frame
+                min_count = frame.access_count
+                LUP = frame
+                frame_index = index
+            elif frame.access_count == min_count:
+                if frame.time_in_bufferpool < LUP.time_in_bufferpool:
+                    # if the access count is the same as the minimum count
+                    # and if the frame has spent less time in the bufferpool than LUP
+                    # update the minimum access count to the access count of the current frame
+                    min_count = frame.access_count
+                    LUP = frame  # update the last used page to the current frame
+                    frame_index = index  # update the index of the frame
+            index += 1
+
+        if LUP.dirty:  # if the page is marked as dirty
+            path = LUP.disk_path2page  # get the path of LUP
+            all_cols = LUP.cols  # get the column data
+            write_to_disk(path, all_cols)  # write the page to disk
+
+        frame_key = LUP.tuple_key  # update the frame key
+        del self.frame_directory[frame_key]  # release memory associated with the frame key
+
+        return frame_index  # returns index of frame that was evicted
         pass
 
 class Frame():
