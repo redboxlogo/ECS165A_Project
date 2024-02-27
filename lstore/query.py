@@ -73,37 +73,42 @@ class Query:
         RID = uuid4().hex                                               # assign hex RID to record 
         key = columns[0]                                                # extract the key from the input
         columns.pop(0)                                                  # removing the key
-
-
-        schema_encoding = bytes()                                       # assign schema encoding as a single empty byte      
-        
+        # schema_encoding = bytes()                                       # assign schema encoding as a single empty byte      
+        schema_encoding = '0' * (self.table.num_columns-1) 
         
         
         newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
 
-        self.table.page_ranges[0].insert_long(newRecord.key, self.table.page_ranges[0].base_page[0][KEY_COLUMN])      # insert key into key column page
-        self.table.page_ranges[0].insert_RID(newRecord.RID, self.table.page_ranges[0].base_page[0][RID_COLUMN])      # insert key into key column page
-        self.table.page_ranges[0].insert_long(newRecord.Time, self.table.page_ranges[0].base_page[0][TIMESTAMP_COLUMN])      # insert key into key column page
-        # self.table.page_ranges[0].insert_RID(RID, self.table.page_ranges[0].base_page[0][INDIRECTION_COLUMN])      # insert key into key column page
-        self.table.page_ranges[0].insert_RID(RID, self.table.page_ranges[0].base_page[0][SCHEMA_ENCODING_COLUMN])      # insert key into key column page
+
+        recentRange = self.table.page_ranges[-1]
+        if(recentRange.capacity_check() == False):
+            recentRange = self.table.newPageRange()
 
 
+        for basePagesNUM in range(PAGE_RANGE_SIZE):
 
-        for i in range()
-        if (self.table.page_directory == {}):
+            if(recentRange.base_page[basePagesNUM][RID_COLUMN].num_records == 256):
+                continue
+            
+            newRecord.ridLocStart, newRecord.ridLocEnd = recentRange.insert_RID(newRecord.rid, recentRange.base_page[basePagesNUM][RID_COLUMN])      # insert rid into rid column page
+            newRecord.startTimeLocStart,newRecord.startTimeLocEnd = recentRange.insert_long(int(newRecord.startTime), recentRange.base_page[basePagesNUM][TIMESTAMP_COLUMN])      # insert start time into time column page
+            newRecord.keyLocStart, newRecord.keyLocEnd = recentRange.insert_long(newRecord.key, recentRange.base_page[basePagesNUM][KEY_COLUMN])      # insert key into key column page
+            recentRange.insert_schema(schema_encoding, recentRange.base_page[basePagesNUM][SCHEMA_ENCODING_COLUMN])      # insert schema into schema column page)
+            recentRange.base_page[basePagesNUM][INDIRECTION_COLUMN].num_records += 1
+            recentRange.base_page[basePagesNUM][INDIRECTION_COLUMN].nextDataBlock = recentRange.base_page[basePagesNUM][RID_COLUMN].nextDataBlock
+            newRecord.indirectionLocStart = newRecord.ridLocStart
+            newRecord.indirectionLocEnd = newRecord.ridLocEnd
 
-            self.table.base_page.append(BaseP)                          # append page table of contents (only needs to be done for first page "-1")
-            self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
+            for i in range(self.table.num_columns-1):
+                recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
 
             return True
 
-        else:
+        # self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
 
-            BaseP = self.table.base_page[-1]                            # access the last base_page in the list "-1" DOES NOT REFER TO THE PAGE NUMBER
-            BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page/ create new base page if first is full
-            self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
-            # logger.info("new record inserted to Base Page with key: {}".format(newRecord.key))
-            return True
+        return True
+        # logger.info("new record inserted to Base Page with key: {}".format(newRecord.key))
+
 
         
 
