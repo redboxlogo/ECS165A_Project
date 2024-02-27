@@ -8,57 +8,70 @@ class Index:
     def __init__(self, table):
         self.table = table  # Storing the table object for later use
         # One index for each table. All our empty initially.
-        self.indices = [None] *  table.num_columns
-        pass
+        self.indices = {}
+        return None
 
     """
     # returns the location of all records with the given value on column "column"
     """
 
     def locate(self, column, value):
-        if column in self.indices and value in self.indices[column]:
-            return self.indices[column][value]
+        if column in self.indices:
+            column_index = self.indices[column]
+            if value in column_index:
+                return column_index[value]
         return None
 
+    
+    #function to directly access records by their IDs
+    
+
     def remove(self, column, key):
-        # Check if the column has an initialized index
-        # The indices attribute is expected to be a list or dictionary where each entry corresponds to a column's index.
-        # Each column's index could be a dictionary itself, mapping record keys to their locations or record IDs (RIDs).
+        
         if self.indices[column] is not None:
-            # If the index for the specified column is not None,
-            # check if the key to be removed exists in this column's index.
-            if key in self.indices[column]:
-                # If the key exists, delete it from the column's index.
-                # This effectively removes the mapping from the key to its record location or RID,
-                # which is part of maintaining the integrity of the index after a record deletion.
+            if key in self.indices[column]:                
                 del self.indices[column][key]
-                # Return True to indicate that the key was found and successfully removed.
                 return True
-        # If the column does not have an index initialized or the key does not exist in the column's index,
-        # return False. This could indicate that either no records exist for that key
-        # or that the column is not indexed.
         return False
 
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
     """
 
+    def insert_newrec(self, record):
+        key = record.key  # Assuming 'key' is a property or method of the Record object
+        # Check if the key exists in the indices dictionary
+        '''if key not in self.indices:
+            # If the key doesn't exist, create an index for it
+            return self.create_index(key)'''
+        # Add the record to the index for the specified key
+        self.indices[key] = record
+        return True  # Successfully inserted the record
+
+
+    def lookup(self, key):
+        # Check if the key exists in the indices dictionary
+        if key in self.indices:
+            # Return the record associated with the key
+            return self.indices[key]
+        return None  # Key not found in the index
+    
     def locate_range(self, begin, end, column):
-        if begin > end:
-        # If begin > end, reverse the range and return the values without reversing again
-            range_values = self.indices[column].values(min=end, max=begin)
-            return list(range_values)
-        else:   
-        # If begin <= end, return the values in the original order
-            range_values = self.indices[column].values(min=begin, max=end)
-            return list(range_values)
+        if column in self.indices:
+            column_index = self.indices[column]
+            records_within_range = []
+            for value in range(begin, end + 1):
+                if value in column_index:
+                    records_within_range.append(column_index[value])
+            return records_within_range
+        return []
 
     """
     # Create index on specific column
     """
 
     def create_index(self, column_number):
-        if self.indices[column_number] is None:
+        if column_number not in self.indices:
             # If no index exists, initialize a new index for the column
             self.indices[column_number] = {}  # You can use any appropriate data structure like a dictionary or a B-Tree
             
@@ -66,7 +79,8 @@ class Index:
             for record in self.table.records:  # Accessing table object
                 # Get the value of the specified column using read_byte_by_index function
                 value = self.read_byte_by_index(record, column_number)
-                
+                #self.indices[column_number][record.record_id] = record---------------->
+
                 # Check if the value is already in the index
                 if value in self.indices[column_number]:
                     # If the value already exists, append the record's position to the list of positions
@@ -85,4 +99,7 @@ class Index:
     """
 
     def drop_index(self, column_number):
-        self.indices[column_number] = None
+        if column_number in self.indices.keys():
+            self.indices[column_number] = None
+            return True
+        return False 

@@ -64,15 +64,14 @@ class Database():
     :param key: int             #Index of table key in columns
     """
     def create_table(self, name, num_columns, key_index):
-        # First, check if a table with the same name already exists in the database
-        for table in self.tables:  # Loop through the existing tables
-            if table.name == name:  # If a table with the given name is found
-                # Raise an exception to indicate a table with this name already exists
-                raise Exception(f"Table '{name}' already exists.")
-        
+    # First, check if a table with the same name already exists in the database
+        if name in self.tables:  # Check if the table name already exists in the dictionary
+            # Raise an exception to indicate a table with this name already exists
+            raise Exception(f"Table '{name}' already exists.")
+
         # If no table with the same name exists, proceed to create a new table
         table = Table(name, num_columns, key_index)  # Create a new Table object
-        self.tables.append(table)  # Add the newly created table to the list of tables in the database
+        self.tables[name] = table  # Add the newly created table to the dictionary with its name as the key
         
         # Return the newly created table object
         return table
