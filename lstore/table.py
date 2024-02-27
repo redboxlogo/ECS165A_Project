@@ -305,3 +305,12 @@ class Table:
         self.num_trecords = table_data["num_tail_records"]
         self.num_page_ranges = table_data["num_page_ranges"]
         self.page_range_data = table_data["page_range_data"]
+
+    # writes table directory to disk
+    def table_page_dir_to_disk(self):
+        self.stores_table_data()  # load all the table data
+        page_dir = open(f"{self.table_path}/page_directory.pkl", "wb")  # open directory path
+        pickle.dump(self.page_directory, page_dir)  # load data into page_directory
+        page_dir.close()  # close the directory
+        
+        return True
