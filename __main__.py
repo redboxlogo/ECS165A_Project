@@ -3,6 +3,7 @@ from lstore.query import Query
 from time import time
 from random import choice, randrange, seed
 
+
 # Student Id and 4 grades
 db = Database()                                                             # create database object from db.py
 grades_table = db.create_table('Grades', 5, 0)                              # call create_table() to create table with name = Grades, columns = 5, index = 0 from db.py
@@ -10,6 +11,14 @@ query = Query(grades_table)                                                 # ca
 keys = []                                                                   # create local "keys" variable
 seed(42069)
 # print(process_time())
+
+
+
+# # Example usage:
+# number = 123456789
+# nibble_array = parse_integer_to_nibbles(number)
+# print(nibble_array)
+
 
 ################################################################################################################################
 
@@ -32,7 +41,7 @@ if(insertFlag == True):
 
 ################################################################################################################################
 
-updateFlag = True
+updateFlag = False
 
 if(updateFlag == True):
     # Measuring update Performance

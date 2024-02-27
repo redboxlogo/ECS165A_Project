@@ -10,6 +10,8 @@ TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
 
 
+PAGE_RANGE_SIZE = 8
+
 class Record:
 
     def __init__(self, rid, schema_encoding, key, columns):     # default constructor for Record() obj
@@ -71,7 +73,7 @@ class Record:
     def updateTailRec(self, baseRecord, basePage, key, updateCols):                         # function adds new tail record and connects to base and old tail records 
 
         # print(updateCols)
-        tailRID = uuid4()                                                                   # generate unique RID
+        tailRID = uuid4().hex                                                               # generate unique RID
         oldTailRecord = baseRecord.getIndirection()                                         # get old tail record
         baseColsList = baseRecord.getallCols(basePage)                                      # get all columns from base record
         updateCols.pop(0)                                                                   # pop the key column off
@@ -107,6 +109,51 @@ class Record:
 
     def keyCompression(self, keyInt):
         pass
+
+
+class PageRange:
+    """
+    :param num_columns: int        Number of data columns in the PageRange
+    :param parent_key: int         Integer key of the parent Table
+    :param pr_key: int             Integer key of the PageRange as it is mapped in the parent Table list
+    """
+    def __init__(self, num_columns: int, parent_key: int, pr_key: int):
+        self.table_key = parent_key
+        self.num_columns = num_columns
+        self.key = pr_key
+        self.num_tail_pages = 0
+        self.num_tail_records = 0
+
+        # Default page names
+        default_names = ["INDIRECTION","RID", "TIME", "SCHEMA", "KEY"]
+
+        # Generate additional page names
+        for i in range(num_columns - 1):
+            default_names.append(f"data_column {i + 1}")
+        self.base_page = [[Page(name) for name in default_names] * PAGE_RANGE_SIZE]
+
+
+
+
+
+
+
+    
+
+    def set_page(self, row, col, page_obj):
+        if 0 <= row < self.size and 0 <= col < self.size:
+            self.page_lists[row][col] = page_obj
+        else:
+            print("Invalid row or column index.")
+
+    def get_page(self, row, col):
+        if 0 <= row < self.size and 0 <= col < self.size:
+            return self.page_lists[row][col]
+        else:
+            print("Invalid row or column index.")
+            return None
+
+    
 # Each Table should have both Base and Tail pages 
 
 class Table:
@@ -121,10 +168,11 @@ class Table:
         self.key = key                                  # set table key
         self.num_columns = num_columns                  # number of columns
         self.page_directory = {}                        # dictionary given a record key, it should return the page address/location
-        self.base_page = []                             # list of Base page objects
-        self.tail_page = []                             # list of Tail page objects
+        self.page_ranges = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
         self.index = Index(self)
-        pass
+
+        return None
+        
 
     def __merge(self):
         print("merge is happening")
