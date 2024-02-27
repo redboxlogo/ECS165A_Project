@@ -2,7 +2,7 @@ from lstore.db import Database
 from lstore.query import Query
 from time import time
 from random import choice, randrange, seed
-
+from lstore.config import *
 
 # Student Id and 4 grades
 db = Database()                                                             # create database object from db.py
