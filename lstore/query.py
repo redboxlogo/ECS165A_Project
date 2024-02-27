@@ -14,6 +14,7 @@ class Query:
     """
     def __init__(self, table):
         self.table = table
+
         pass
         
 
@@ -104,6 +105,7 @@ class Query:
 
             for i in range(self.table.num_columns-1):
                 recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
+            return self.table.index.insert_newrec(newRecord)
 
             self.table.page_directory.update({newRecord.key:recentRange.base_page[basePagesNUM]})     # update page directory with new key and page address
             

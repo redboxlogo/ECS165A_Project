@@ -37,6 +37,7 @@ if(insertFlag == True):
     # print(insert_time_1 - insert_time_0)
     print("Inserting 1M records took:  \t\t\t", insert_time_1 - insert_time_0) #print
 
+print(query.table.index.lookup(906659673))
 
 ################################################################################################################################
 
