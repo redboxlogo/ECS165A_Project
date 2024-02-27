@@ -44,7 +44,14 @@ class Index:
     """
 
     def locate_range(self, begin, end, column):
-        pass
+        if begin > end:
+        # If begin > end, reverse the range and return the values without reversing again
+            range_values = self.indices[column].values(min=end, max=begin)
+            return list(range_values)
+        else:   
+        # If begin <= end, return the values in the original order
+            range_values = self.indices[column].values(min=begin, max=end)
+            return list(range_values)
 
     """
     # Create index on specific column
