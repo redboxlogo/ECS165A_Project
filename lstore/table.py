@@ -125,29 +125,17 @@ class PageRange:
         self.num_tail_records = 0
 
         # Default page names
-        default_names = ["RID", "KEY", "TIME", "SCHEMA", "INDIRECTION"]
+        default_names = ["INDIRECTION","RID", "TIME", "SCHEMA", "KEY"]
 
         # Generate additional page names
         for i in range(num_columns - 1):
             default_names.append(f"data_column {i + 1}")
-
-
-        print("hello")
         self.base_page = [[Page(name) for name in default_names] * PAGE_RANGE_SIZE]
-        # self.base_page = [[Page(default_names)] * num_columns for _ in range(PAGE_RANGE_SIZE)]
-
-        print("hello")
 
 
-        # # Create the pages with sequential names
-        # for row in range(PAGE_RANGE_SIZE):
-        #     page_row = []
-        #     for col in range(num_columns):
-        #         if col < len(default_names):
-        #             page_row.append(Page(default_names[col]))
-        #         else:
-        #             page_row.append(Page(f"Page {len(default_names) + col + 1 - len(default_names)}"))
-        #     self.page_lists.append(page_row)
+
+
+
 
 
     
