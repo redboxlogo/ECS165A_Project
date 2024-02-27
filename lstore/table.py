@@ -3,24 +3,35 @@ from lstore.page import Page
 from time import time
 from uuid import uuid4
 from lstore.logger import logger
-
-INDIRECTION_COLUMN = 0
-RID_COLUMN = 1
-TIMESTAMP_COLUMN = 2
-SCHEMA_ENCODING_COLUMN = 3
+from lstore.config import *
 
 
 class Record:
 
     def __init__(self, rid, schema_encoding, key, columns):     # default constructor for Record() obj
         self.rid = rid                                          # rid for identification
+        self.ridLocStart = None
+        self.ridLocEnd = None
+        
         self.indirection = None                                 # pointer used to point to tail (if in Base page) or prior update (if in Tail page)
-        self.startTime = time()                                 # record creation time 
+        self.indirectionLocStart = None
+        self.indirectionLocEnd = None
+
+        self.startTime = int(time())                                 # record creation time 
+        self.startTimeLocStart = None
+        self.startTimeLocEnd = None
+        
         self.schema_encoding = schema_encoding                  # schema_encoding to keep track of updates
+        self.schema_encodingLocStart = None
+        self.schema_encodingLocEnd = None
+        
         self.key = key                                          # key for dictonary updates
-        self.columns = columns                                  # column data
-        self.pageLocStart = None                                # bytearray index for start of record
-        self.pageLocEnd = None                                  # bytearray index for (last element in columns + 1)
+        self.keyLocStart = None
+        self.keyLocEnd = None
+
+        self.columns = columns                                  # column data will be empty after writing to page
+        self.colLocStart = None                                 # bytearray index for start of record
+        self.colLocEnd = None                                   # bytearray index for (last element in columns + 1)
 
     def checkIndirection(self):                                 # boolean to check if an indirection exists inside a base record 
         if self.indirection == None:                            # if indirection does not exist  
@@ -58,7 +69,7 @@ class Record:
     def updateTailRec(self, baseRecord, basePage, key, updateCols):                         # function adds new tail record and connects to base and old tail records 
 
         # print(updateCols)
-        tailRID = uuid4()                                                                   # generate unique RID
+        tailRID = uuid4().hex                                                               # generate unique RID
         oldTailRecord = baseRecord.getIndirection()                                         # get old tail record
         baseColsList = baseRecord.getallCols(basePage)                                      # get all columns from base record
         updateCols.pop(0)                                                                   # pop the key column off
@@ -92,6 +103,65 @@ class Record:
     def getEnd(self):                                                                       # get the end location for record data in base page            
         return self.pageLocEnd                                                              # return the end index of the record data in base page
 
+
+class PageRange:
+    """
+    :param num_columns: int        Number of data columns in the PageRange
+    :param parent_key: int         Integer key of the parent Table
+    :param pr_key: int             Integer key of the PageRange as it is mapped in the parent Table list
+    """
+    def __init__(self, num_columns: int, parent_key: int, pr_key: int):
+        self.table_key = parent_key
+        self.num_columns = num_columns
+        self.key = pr_key
+        self.num_tail_pages = 0
+        self.num_tail_records = 0
+        # Default page names
+        default_names = ["INDIRECTION","RID", "TIME", "SCHEMA", "KEY"]
+        # Generate additional page names
+        for i in range(num_columns - 1):
+            default_names.append(f"data_column {i + 1}")
+        self.base_page = [[Page(name) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
+
+    def capacity_check(self):
+        if(self.base_page[-1][RID_COLUMN].num_records == 256):
+            return False
+        else:
+            return True
+        
+    def insert_colElement(self,colData:int, page:Page):
+        ElementIndex, nextByte = page.fill_bytearray(colData)
+        return ElementIndex
+
+    # function to insert information larger than a single byte
+    def insert_long(self, primary_key:int , page:Page):
+        startIndex, endIndex = page.parse_integer_to_nibbles(primary_key)
+        return startIndex, endIndex
+
+    def insert_RID(self, RID:hex , page:Page):
+        startIndex, endIndex = page.store_hex_in_bytearray(RID)
+        return startIndex, endIndex
+    
+    def insert_schema(self, schema:str, page:Page):
+        
+        numCols = len(schema)
+
+        # Convert the series of zeros to binary
+        binary_representation = int(schema, 2)
+
+        # Calculate the number of bytes needed
+        num_bytes = (numCols + 7) // 8
+
+        startIndex, endIndex = page.space_allocation(num_bytes)
+
+        # # Convert to bytes
+        # byte_value = binary_representation.to_bytes(num_bytes, byteorder='big')
+
+
+        return startIndex, endIndex
+
+
+    
 # Each Table should have both Base and Tail pages 
 
 class Table:
@@ -106,14 +176,21 @@ class Table:
         self.key = key                                  # set table key
         self.num_columns = num_columns                  # number of columns
         self.page_directory = {}                        # dictionary given a record key, it should return the page address/location
-        self.base_page = []                             # list of Base page objects
-        self.tail_page = []                             # list of Tail page objects
+        self.page_ranges = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
         self.index = Index(self)
-        pass
+
+        return None
+        
 
     def __merge(self):
         print("merge is happening")
         pass
+
+    def newPageRange(self):
+        mostRecent = self.page_ranges[-1]
+        newRange = PageRange(num_columns=mostRecent.num_columns, parent_key=mostRecent.table_key, pr_key=(mostRecent.key+1))
+        self.page_ranges.append(newRange)
+        return newRange
     
     # helper function to set Base record after insert retaining read-only properties of base page
     def setBase(self, basePage, insertRecord):
