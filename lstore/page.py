@@ -1,9 +1,10 @@
 from lstore.logger import logger
+from lstore.config import *
 
-PAGE_SIZE = 4096
 
 
 class Page:
+    # each page should only store 256 records
 
     def __init__(self, directoryID: str):
         self.directoryID = directoryID          # page identifier: positive for tail pages; negative for base
@@ -54,7 +55,36 @@ class Page:
         return RecordObj
     
 
-    def parse_integer_to_nibbles(number):
+
+    def store_hex_in_bytearray(self, hex_value:hex):
+        # Convert hex string to bytes
+        hex_bytes = bytes.fromhex(hex_value)
+        print(hex_bytes)
+
+        # # Convert bytes to hexadecimal string using hex() method
+        # hex_string = hex_bytes.hex()
+        # print(hex_string)
+
+        # Create a bytearray of the specified size
+        result = self.data
+
+        # Calculate how much of the bytearray will be filled
+        bytes_to_fill = min(PAGE_SIZE, len(hex_bytes))
+        print(bytes_to_fill)
+
+        # Fill the beginning of the bytearray with the hex bytes
+        result[self.nextDataBlock:bytes_to_fill] = hex_bytes[:bytes_to_fill]
+
+        self.nextDataBlock = bytes_to_fill
+
+
+
+        print(bytes_to_fill)
+
+        return result
+
+    def parse_integer_to_nibbles(self, number:int):
+
         if not isinstance(number, int) or number < 0:
             raise ValueError("Input must be a non-negative integer")
 
@@ -65,7 +95,7 @@ class Page:
         num_nibbles = (len(number_str) + 1) // 2
 
         # Create a byte array to store the nibbles
-        nibble_array = bytearray(num_nibbles)
+        nibble_array = self.data
 
         # Iterate over the digits in pairs to create the nibbles
         for i in range(0, len(number_str), 2):
@@ -79,7 +109,9 @@ class Page:
             # Store the nibble in the byte array
             nibble_array[i // 2] = nibble
 
-        return nibble_array
+        self.nextDataBlock = ((i/2)+1)
+
+        return None
     
     # checks capacity of page
     # writes to bytearray

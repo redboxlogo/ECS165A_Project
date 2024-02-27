@@ -3,14 +3,8 @@ from lstore.page import Page
 from time import time
 from uuid import uuid4
 from lstore.logger import logger
+from lstore.config import *
 
-INDIRECTION_COLUMN = 0
-RID_COLUMN = 1
-TIMESTAMP_COLUMN = 2
-SCHEMA_ENCODING_COLUMN = 3
-
-
-PAGE_RANGE_SIZE = 8
 
 class Record:
 
@@ -107,9 +101,6 @@ class Record:
     def getEnd(self):                                                                       # get the end location for record data in base page            
         return self.pageLocEnd                                                              # return the end index of the record data in base page
 
-    def keyCompression(self, keyInt):
-        pass
-
 
 class PageRange:
     """
@@ -130,28 +121,31 @@ class PageRange:
         # Generate additional page names
         for i in range(num_columns - 1):
             default_names.append(f"data_column {i + 1}")
+
         self.base_page = [[Page(name) for name in default_names] * PAGE_RANGE_SIZE]
 
-
-
-
-
-
-
+    # function to insert information larger than a single byte
+    def insert_long(self, primary_key:int , page:Page):
+        page.parse_integer_to_nibbles(primary_key)
+        return None
     
 
-    def set_page(self, row, col, page_obj):
-        if 0 <= row < self.size and 0 <= col < self.size:
-            self.page_lists[row][col] = page_obj
-        else:
-            print("Invalid row or column index.")
+    def insert_RID(self, RID:hex , page:Page):
+        page.store_hex_in_bytearray(RID)
+        return None
 
-    def get_page(self, row, col):
-        if 0 <= row < self.size and 0 <= col < self.size:
-            return self.page_lists[row][col]
-        else:
-            print("Invalid row or column index.")
-            return None
+    # def set_page(self, row, col, page_obj):
+    #     if 0 <= row < self.size and 0 <= col < self.size:
+    #         self.page_lists[row][col] = page_obj
+    #     else:
+    #         print("Invalid row or column index.")
+
+    # def get_page(self, row, col):
+    #     if 0 <= row < self.size and 0 <= col < self.size:
+    #         return self.page_lists[row][col]
+    #     else:
+    #         print("Invalid row or column index.")
+    #         return None
 
     
 # Each Table should have both Base and Tail pages 
