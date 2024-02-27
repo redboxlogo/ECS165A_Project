@@ -1,5 +1,5 @@
 from lstore.table import Table
-from bufferpool import *
+from lstore.bufferpool import *
 import os
 import shutil
 import json
