@@ -3,6 +3,7 @@ from lstore.page import Page
 from time import time
 from uuid import uuid4
 from lstore.logger import logger
+import threading
 
 INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
