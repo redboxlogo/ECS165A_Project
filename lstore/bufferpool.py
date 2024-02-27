@@ -34,8 +34,40 @@ class Bufferpool():
             return False
 
     def fetch_page(self, page_id):
-        # Implementation for fetching a page into the bufferpool
-        pass
+       # Check if the page is already in the buffer pool
+        for frame in self.frames:
+            if frame.tuple_key == page_id:
+                frame.access_count += 1  # Increment access count since the page is accessed
+                return frame
+
+        # If the page is not in the buffer pool, fetch it from disk
+        if not self.full():
+            # Create a new frame
+            new_frame = Frame(page_id[0], page_id[1])  # Assuming page_id is a tuple (table_name, bpage, brecord)
+            # Load the page content into the frame (You need to implement this logic)
+            # For example: new_frame.load_page_content(page_content)
+            # Set the frame as dirty since it's fetched from disk
+            new_frame.set_dirty()
+            # Pin the frame as it's being used
+            new_frame.pin()
+            # Add the frame to the buffer pool
+            self.frames.append(new_frame)
+            self.frame_count += 1
+            return new_frame
+        else:
+            # If the buffer pool is full, evict a page
+            evicted_frame_index = self.evict_page()
+            # Fetch the page from disk and load it into the evicted frame
+            evicted_frame = self.frames[evicted_frame_index]
+            # For example: evicted_frame.load_page_content(page_content)
+            # Set the frame as dirty since it's fetched from disk
+            evicted_frame.set_dirty()
+            # Pin the frame as it's being used
+            evicted_frame.pin()
+            # Update the frame directory with the new page_id
+            self.frame_directory[page_id] = evicted_frame
+            return evicted_frame
+
 
     def evict_page(self):
         LUP = self.frames[0]  # last used page as first page in list of frames
