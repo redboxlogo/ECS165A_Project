@@ -6,6 +6,7 @@ A data strucutre holding indices for various columns of a table. Key column shou
 class Index:
 
     def __init__(self, table):
+        self.table = table  # Storing the table object for later use
         # One index for each table. All our empty initially.
         self.indices = [None] *  table.num_columns
         pass
@@ -50,13 +51,12 @@ class Index:
     """
 
     def create_index(self, column_number):
-        
         if self.indices[column_number] is None:
             # If no index exists, initialize a new index for the column
             self.indices[column_number] = {}  # You can use any appropriate data structure like a dictionary or a B-Tree
             
             # Iterate over each record in the table to populate the index
-            for record in table.records:
+            for record in self.table.records:  # Accessing table object
                 # Get the value of the specified column using read_byte_by_index function
                 value = self.read_byte_by_index(record, column_number)
                 
