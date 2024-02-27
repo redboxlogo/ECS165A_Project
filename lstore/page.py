@@ -145,3 +145,29 @@ class Page:
     def updateMetadataKey(self, newKey, oldKey):
         self.record_metadata[newKey] = self.record_metadata.pop(oldKey) # Create a new key-value pair with the updated key and value
         return self
+
+
+    '''
+    reads pages from disk
+    '''
+
+    def read_from_disk(self, file_path, column):
+        file = open(file_path, "rb")  # opens file in binary read mode
+        file.seek(column * PAGE_SIZE)  # moves the file pointer to the specified position
+        self.data = bytearray(
+            file.read(PAGE_SIZE))  # reads a page-sized chunk of data from the file and stores into bytearray
+        file.close()  # close the file
+
+        return True
+
+
+"""
+writes pages to disk for the file path
+"""
+
+
+def write_to_disk(file_path, all_cols):
+    file = open(file_path, "wb")  # opens file in binary write mode
+    for i in range(len(all_cols)):  # iterates over each column in the all_cols list
+        file.write(all_cols[i].data)  # writes the data of each column to the opened binary file
+    file.close()  # close file
