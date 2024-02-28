@@ -1,21 +1,25 @@
-from lstore.page import Page
+from lstore.page import *
 from lstore.table import *
+import os
+import pickle
+import time
 
 BUFFERPOOL_FRAME_COUNT = 100
 
 
 class Bufferpool():
 
-    def __init__(self):
+    def __init__(self, path2root):
         self.frames = []  # frame
         self.frame_directory = {}  # directory for frame is set to dictionary
         self.frame_count = 0  # frame count
+        self.path2root = path2root
 
     '''
     passes frames to frame directory
     '''
-    def frame_to_dict(self, table_name, bpage, brecord, frame_index):  # maybe add in page range?
-        frame_key = (table_name, bpage, brecord)
+    def frame_to_dict(self, table_name, page_range, bpage, brecord, frame_index):  # maybe add in page range?
+        frame_key = (table_name, page_range, bpage, brecord)
         self.frame_directory[frame_key] = frame_index 
         self.frames[frame_index].tuple_key = frame_key
 
@@ -42,7 +46,7 @@ class Bufferpool():
             frame = self.frames[frame_index]
             frame.pin()  # Mark the frame as pinned
             frame.access_count += 1
-            frame.last_access_time = time.time()  # Update for LRU policy
+            frame.last_access_time = time.time()  # Update for LRU policy using time.time()
             frame.unpin()  # Unpin the frame right before returning
             return frame
 
@@ -62,7 +66,7 @@ class Bufferpool():
             new_frame = Frame(table_name, page_path)
             new_frame.cols = page_data
             new_frame.access_count = 1
-            new_frame.last_access_time = time.time()  # Set time for LRU policy
+            new_frame.last_access_time = time.time()  # Set time for LRU policy using time.time()
             new_frame.pin()  # Mark the new frame as pinned
 
             # If there was an eviction, replace the evicted frame
@@ -80,6 +84,8 @@ class Bufferpool():
             print(f"Page {page_id} not found for table {table_name}.")
         except Exception as e:
             print(f"An error occurred while fetching page {page_id} for table {table_name}: {e}")
+            return None  # Explicitly return None to indicate an error
+
 
     def evict_page(self):
         LUP = self.frames[0]  # last used page as first page in list of frames
@@ -113,7 +119,18 @@ class Bufferpool():
         del self.frame_directory[frame_key]  # release memory associated with the frame key
 
         return frame_index  # returns index of frame that was evicted
-        pass
+
+    def commit_page(self, index):  # passes in index of frame, commits the page to disk
+        current_frame = self.frames[index]  # identify frame we wish to commit
+        all_cols = current_frame.cols  # get all column data
+        path2page = current_frame.disk_path2page  # get the path to page on disk for the frame
+        if current_frame.dirty:  # if the frame is dirty
+            write_to_disk(path2page, all_cols)  # write them to disk
+
+    def commit_frames(self):  # commits all frames when closing the database
+        for index in range(len(self.frames)):  # iterate through all frames
+            if self.frames[index].dirty:  # if frame is dirty
+                self.commit_page(index)  # commit it to disk
 
 class Frame():
 
@@ -123,7 +140,7 @@ class Frame():
         self.pinned = False  # indicates whether a frame is pinned or unpinned
         self.time = 0  # records time in bufferpool
         self.access_count = 0  # number of times page has been accessed
-        self.tuple_key = None  # holds a tuple key that uniquely identifies the frame; temporary
+        self.key = None  # holds a tuple key that uniquely identifies the frame; temporary
         self.disk_path2page = disk_path2page  # path to page on disk
         self.table_name = table_name  # name of table associated with frame
 
