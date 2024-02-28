@@ -86,7 +86,9 @@ class Bufferpool():
 class Frame():
 
     def __init__(self, table_name, disk_path2page):
+    def __init__(self, table_name, disk_path2page):
         self.cols = []  # all column data
+        self.dirty = False  # indicates dirty page
         self.dirty = False  # indicates dirty page
         self.pinned = False  # indicates whether a frame is pinned or unpinned
         self.time = 0  # records time in bufferpool
@@ -97,9 +99,18 @@ class Frame():
 
     '''
     setter function for dirty page
+    setter function for dirty page
     '''
     def set_dirty(self):
         self.dirty = True
+        return True
+
+    '''
+    unset function for dirty page
+    '''
+    def unset_dirty(self):
+        self.dirty = False
+        return True
         return True
 
     '''
@@ -114,6 +125,7 @@ class Frame():
     '''
     def pin(self):
         self.pinned = True
+        return True
         return True
         
     '''
