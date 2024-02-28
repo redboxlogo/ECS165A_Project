@@ -56,6 +56,9 @@ class Database():
             self.root = root_path
 
     def close(self):
+
+    stores_table_data()
+        
         # Iterate through tables and grab all index values
         index_values = []
         for table in self.tables:
@@ -85,19 +88,6 @@ class Database():
     def release_locks(self, table):
         table_name = table.name
         self.release_lock(table_name)
-
-    def stores_table_data(self):
-        table_data = {}  # Initialize an empty dictionary to store table data
-        # Logic to fetch data from the table and store it into table_data dictionary
-        # Assuming data fetching and processing logic here
-        return table_data
-
-    def table_page_dir_disk(self):
-        table_data = self.stores_table_data()  # Get table data using stores_table_data method
-        with open('page_dir', 'wb') as page_dir:  # Open page directory file in write binary mode
-            # Write all the data from self.page_directory into page_dir
-            # Assuming self.page_directory is accessible within this scope
-            page_dir.write(table_data)  # Write data to page_dir file
 
     """
     # Creates a new table
