@@ -6,7 +6,7 @@ BUFFERPOOL_FRAME_COUNT = 100
 
 class Bufferpool():
 
-    def __init__(self):
+    def __init__(self, path2root):
         self.frames = []  # frame
         self.frame_directory = {}  # directory for frame is set to dictionary
         self.frame_count = 0  # frame count
@@ -15,8 +15,8 @@ class Bufferpool():
     '''
     passes frames to frame directory
     '''
-    def frame_to_dict(self, table_name, bpage, brecord, frame_index):  # maybe add in page range?
-        frame_key = (table_name, bpage, brecord)
+    def frame_to_dict(self, table_name, page_range, bpage, brecord, frame_index):  # maybe add in page range?
+        frame_key = (table_name, page_range, bpage, brecord)
         self.frame_directory[frame_key] = frame_index 
         self.frames[frame_index].tuple_key = frame_key
 
