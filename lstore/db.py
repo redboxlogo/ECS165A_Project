@@ -168,6 +168,7 @@ class Database:
     """
     # Returns table with the passed name
     """
+    
     def get_table(self, name):
         print(f'tables = {self.tables}')
         return self.tables[name]
