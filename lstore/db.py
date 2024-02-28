@@ -58,6 +58,8 @@ class Database():
     def close(self):
 
     stores_table_data()
+
+    #this will call a function from table.py that will expedite the process of acquiring values from a table from the database.
         
         # Iterate through tables and grab all index values
         index_values = []
@@ -88,6 +90,8 @@ class Database():
     def release_locks(self, table):
         table_name = table.name
         self.release_lock(table_name)
+
+# Still indecisive on release_lock and release_locks both being used together. Will wait til after testing to determine if we keep them.
 
     """
     # Creates a new table
