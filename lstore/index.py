@@ -6,11 +6,12 @@ import pickle
 
 class Index:
 
-    def __init__(self, table):
+    def __init__(self, table):#(self, table,root_path)
         self.table = table  # Storing the table object for later use
         # One index for each table. All our empty initially.
         self.indices = {}
         self.rid_to_tail_records = {} 
+        #self.root_path = root_path
         return None
 
 
