@@ -33,9 +33,53 @@ class Bufferpool():
         else:
             return False
 
-    def fetch_page(self, page_id):
-        # Implementation for fetching a page into the bufferpool
-        pass
+    def fetch_page(self, table_name, page_id):
+        frame_key = (table_name, page_id)
+        
+        # If the page is already in the buffer, return it and update LRU info
+        if frame_key in self.frame_directory:
+            frame_index = self.frame_directory[frame_key]
+            frame = self.frames[frame_index]
+            frame.pin()  # Mark the frame as pinned
+            frame.access_count += 1
+            frame.last_access_time = time.time()  # Update for LRU policy
+            frame.unpin()  # Unpin the frame right before returning
+            return frame
+
+        # If the buffer is full, evict a page
+        if self.full():
+            evicted_frame_index = self.evict_page()
+        else:
+            evicted_frame_index = None
+
+        # Load the page from disk
+        try:
+            page_path = os.path.join(self.path2root, table_name, f"page_{page_id}.pkl")
+            with open(page_path, 'rb') as page_file:
+                page_data = pickle.load(page_file)
+
+            # Create a new frame for the page
+            new_frame = Frame(table_name, page_path)
+            new_frame.cols = page_data
+            new_frame.access_count = 1
+            new_frame.last_access_time = time.time()  # Set time for LRU policy
+            new_frame.pin()  # Mark the new frame as pinned
+
+            # If there was an eviction, replace the evicted frame
+            if evicted_frame_index is not None:
+                self.frames[evicted_frame_index] = new_frame
+                self.frame_directory[frame_key] = evicted_frame_index
+            else:
+                self.frames.append(new_frame)
+                self.frame_directory[frame_key] = len(self.frames) - 1
+
+            new_frame.unpin()  # Unpin the new frame right before returning
+            return new_frame
+
+        except FileNotFoundError:
+            print(f"Page {page_id} not found for table {table_name}.")
+        except Exception as e:
+            print(f"An error occurred while fetching page {page_id} for table {table_name}: {e}")
 
     def evict_page(self):
         LUP = self.frames[0]  # last used page as first page in list of frames
