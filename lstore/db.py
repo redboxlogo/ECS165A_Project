@@ -107,35 +107,43 @@ class Database():
     # Deletes the specified table
     """
     def drop_table(self, name):
-        # Check if the table exists in the database
+        # Check if the table exists in the database by looking it up in the self.tables dictionary
         if name in self.tables:
-            # Delete the table from the dictionary
+            # If the table exists, delete the table object from the self.tables dictionary
             del self.tables[name]
 
-            # Delete related files from the disk to fully remove the table
+            # Retrieve the path of the table from the table_directory dictionary
+            # The get method is used to safely access the table's path with a default of None if not found
             table_path = self.table_directory.get(name, {}).get("table_path_name", None)
             if table_path and os.path.exists(table_path):
-                shutil.rmtree(table_path)  # This will delete the directory and all its contents
+                # If the table path exists on disk, delete the directory and all of its contents
+                shutil.rmtree(table_path)
 
-            # Remove the table's entry from the table_directory dictionary
+            # Check if the table's entry exists in the table_directory dictionary
             if name in self.table_directory:
+                # If it exists, delete the entry from the table_directory dictionary
                 del self.table_directory[name]
 
-                # Update the table_directory file on disk to reflect this change
+                # Update the table_directory.pkl file on disk to reflect the deletion of the table
+                # This ensures that the persistent state of the database is consistent with its in-memory state
                 file_path = os.path.join(self.root, "table_directory.pkl")
                 with open(file_path, "wb") as pkl_file:
+                    # Dump the updated table_directory dictionary to the file
                     pickle.dump(self.table_directory, pkl_file)
         else:
-            # Raise an error if the table does not exist
+            # If the table does not exist in the self.tables dictionary, raise a KeyError
+            # This exception informs the user or calling function that the operation could not be completed because the table was not found
             raise KeyError(f"Table '{name}' does not exist.")
 
     """
     # Returns table with the passed name
     """
+    
     def get_table(self, name):
-        # Iterate through the list of tables to find and return the table with the matching name
-        for table in self.tables:
-            if table.name == name:
-                return table  # Return the table instance if found
-        # If no table with the specified name is found, raise an error indicating it does not exist
-        raise KeyError(f"Table '{name}' does not exist.")
+        # Check if the table name exists as a key in the self.tables dictionary
+        if name in self.tables:
+            # If the table exists, return the table object
+            return self.tables[name]
+        else:
+            # If the table does not exist, raise a KeyError with a message indicating the table does not exist
+            raise KeyError(f"Table '{name}' does not exist.")
