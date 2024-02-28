@@ -74,10 +74,7 @@ class Database():
         with open(file_path, "wb") as pkl_file:
             pickle.dump(self.table_directory, pkl_file)
         # Release memory
-        self.tables = []
-        self.bufferpool = None
         self.root_name = None
-        self.table_directory = {}
 
     def acquire_lock(self, table_name):
         if table_name not in self.locks:
