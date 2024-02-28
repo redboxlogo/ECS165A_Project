@@ -114,7 +114,7 @@ class Database():
 
     def fill_table(self):
         for table_name in self.table_directory:
-            table_path = self.table_directory[table_name].get("table_path_name")
+            table_path = self.table_directory[table_name].get("table_path")
             num_columns = self.table_directory[table_name].get("num_columns")
             table_key = self.table_directory[table_name].get("key")
             placeholder = Table(name=table_name, num_columns=num_columns, key=table_key, path=table_path,
@@ -137,21 +137,23 @@ class Database():
     # Deletes the specified table
     """
     def drop_table(self, name):
-        # Iterate through the list of tables to find the one with the matching name
-        for i, table in enumerate(self.tables):
-            if table.name == name:
-                del self.tables[i]  # Delete the table from the list if found
-                return  # Exit the method after deleting the table
-        # If the table with the specified name was not found, raise an error
-        raise KeyError(f"Table '{name}' does not exist.")
+        if name in self.table_directory:  # check if table name in directory
+            table_dir_path = self.table_directory[name]["table_path"]  # get the table directory path
+            print(table_dir_path)
+            print(os.path.exists(table_dir_path))
+            if os.path.isdir(table_dir_path):  # if directory exists
+                shutil.rmtree(table_dir_path)  # delete the directory
+                del self.table_directory[name]  # delete table name from directory
+                del self.tables[name]  # delete table name from table dictionary
+                # print("dropped successfully")
+                return True
+
+        # print("Unable to drop table")
+        return False
 
     """
     # Returns table with the passed name
     """
     def get_table(self, name):
-        # Iterate through the list of tables to find and return the table with the matching name
-        for table in self.tables:
-            if table.name == name:
-                return table  # Return the table instance if found
-        # If no table with the specified name is found, raise an error indicating it does not exist
-        raise KeyError(f"Table '{name}' does not exist.")
+        # print(f'tables = {self.tables}')
+        return self.tables[name]
