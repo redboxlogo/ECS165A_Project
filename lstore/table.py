@@ -186,9 +186,9 @@ class Table:
         self.num_brecords = 0
         self.num_trecords = 0
         self.page_directory = {}  # dictionary given a record key, it should return the page address/location
-        self.num_pranges = 0
-        self.prange_data = {}
-        self.prange = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
+        self.num_page_ranges = 0
+        self.page_range_data = {}
+        self.page_range = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
         self.base_page = []  # list of Base page objects
         self.tail_page = []  # list of Tail page objects
         self.index = Index(self)
@@ -284,12 +284,12 @@ class Table:
             "key": self.key,
             "table_path": self.table_path,
             "num_columns": self.num_columns,
-            "column_names": self.col_names,
+            "col_names": self.col_names,
             "num_records": self.num_records,
-            "num_base_records": self.num_brecords,
-            "num_tail_records": self.num_trecords,
-            "num_page_ranges": self.num_pranges,
-            "page_range_data": self.prange_data,
+            "num_brecords": self.num_brecords,
+            "num_trecords": self.num_trecords,
+            "num_page_ranges": self.num_page_ranges,
+            "page_range_data": self.page_range_data,
         }
         self.page_directory["table_data"] = table_data
 
