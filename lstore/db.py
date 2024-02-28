@@ -54,8 +54,28 @@ class Database():
             self.root = root_path
 
     def close(self):
-        
-        pass
+        table_file_dir = open(f"{self.root}/table_directory.pkl", "wb")  # get directory to table files
+        pickle.dump(self.table_directory, table_file_dir)  # write table directory to table_file_dir in binary
+        table_file_dir.close()  # close the file object
+
+        for table_data in self.table_directory.values():  # iterate through all table data in directory
+            table_name = table_data.get("name")  # get name of table
+            get_table = self.tables[table_name]  # get table info for the name
+            get_table.record_lock = None  # initialize locking
+            closed = get_table.table_page_dir_to_disk()  # closes the table page directory; returns True if closed, False if not
+
+            if not closed:
+                raise Exception(f"Could not close the page directory: {table_name}")  # raise error if cannot be closed
+
+            index_file = open(f"{get_table.table_path}/indices.pkl", "wb")  # save indexes as pkl file
+
+            pickle.dump(get_table.index, index_file)  # load in index data from get_table into index_file
+            index_file.close()  # close the index file
+
+        self.bufferpool.commit_frames()  # commits frames and writes dirty pages to disk
+
+        # print("closed successfully")
+        return True
 
     """
     # Creates a new table
