@@ -142,6 +142,7 @@ def save_index_to_pickle(index_object, file_path):
     except Exception as e:
         print(f"Error saving index data to pickle: {e}")
 
+
 def load_index_from_pickle(file_path, index_object):
     """
     Load index data from a pickle file.
