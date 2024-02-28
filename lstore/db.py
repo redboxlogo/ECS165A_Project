@@ -96,7 +96,7 @@ class Database:
 
         table_path = f"{self.root}/{name}"  # write name of path for the table
         if os.path.isdir(table_path):  # if table_path exists in directory
-            print(f"Table name, {name}, already exists.")
+            raise Exception(f"Table name, {name}, already exists.")
 
         else:
             os.mkdir(table_path)  # make the directory
