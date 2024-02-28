@@ -1,12 +1,12 @@
-from lstore.page import Page
-from lstore.table import *
+#from lstore.page import Page
+#from lstore.table import *
 
 BUFFERPOOL_FRAME_COUNT = 100
 
 
 class Bufferpool():
 
-    def __init__(self):
+    def __init__(self,path2root):
         self.frames = []  # frame
         self.frame_directory = {}  # directory for frame is set to dictionary
         self.frame_count = 0  # frame count
@@ -101,8 +101,6 @@ class Bufferpool():
         del self.frame_directory[frame_key]  # release memory associated with the frame key
 
         return frame_index  # returns index of frame that was evicted
-        pass
-
 class Frame():
 
     def __init__(self, table_name, disk_path2page):

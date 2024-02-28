@@ -164,7 +164,7 @@ class Page:
     """
 
 
-    def write_to_disk(file_path, all_cols):
+def write_to_disk(file_path, all_cols):
         file = open(file_path, "wb")  # opens file in binary write mode
         for i in range(len(all_cols)):  # iterates over each column in the all_cols list
             file.write(all_cols[i].data)  # writes the data of each column to the opened binary file
