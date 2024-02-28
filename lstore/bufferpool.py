@@ -178,7 +178,6 @@ class Bufferpool():
 class Frame():
 
     def __init__(self, table_name, disk_path2page):
-    def __init__(self, table_name, disk_path2page):
         self.cols = []  # all column data
         self.dirty = False  # indicates dirty page
         self.dirty = False  # indicates dirty page

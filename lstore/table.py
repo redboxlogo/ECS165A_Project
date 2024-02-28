@@ -1,3 +1,5 @@
+import pickle
+import threading
 from lstore.index import Index
 from lstore.page import Page
 from time import time
@@ -30,11 +32,18 @@ class Record:
         self.keyLocEnd = None
 
         self.columns = columns                                  # column data will be empty after writing to page
-        self.colLocStart = None                                 # bytearray index for start of record
-        self.colLocEnd = None                                   # bytearray index for (last element in columns + 1)
+        self.columnsLoc = []
 
         self.page_range_indexNUM = None
         self.base_page_indexNUM = None
+
+    def flip_bit(self, byte_str, bit_position):
+        byte_int = int(byte_str, 2)  # Convert binary string to integer
+        num_bits = len(byte_str)  # Get the number of bits in the byte
+        flipped_bit_position = num_bits - 1 - bit_position  # Calculate the position from the right
+        flipped_byte_int = byte_int ^ (1 << flipped_bit_position)  # Flip the bit
+        flipped_byte_str = format(flipped_byte_int, '0{}b'.format(num_bits))  # Convert back to binary string with leading zeros
+        return flipped_byte_str[-num_bits:]  # Cut off any leading zeros added
 
     def checkIndirection(self):                                 # boolean to check if an indirection exists inside a base record 
         if self.indirection == None:                            # if indirection does not exist  
@@ -141,11 +150,11 @@ class PageRange:
         for i in range(self.num_columns - 1):
             name_template.append(f"Tail_data_column {i + 1}")
         
-        self.tail_page = [[Page(name) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
+        self.tail_page = [[Page(name) for name in name_template] for _ in range(PAGE_RANGE_SIZE)]
 
 
     def capacity_check(self):
-        if(self.base_page[-1][RID_COLUMN].num_records == 256):
+        if(self.base_page[-1][RID_COLUMN].num_records == MAX_RECORDS):
             return False
         else:
             return True
@@ -167,7 +176,7 @@ class PageRange:
 
         return page.store_hex_in_bytearray_by_index(RID,start,end)
     
-    def insert_schema(self, schema:str, page:Page):
+    def allocate_schema(self, schema:str, page:Page):
         
         numCols = len(schema)
 
@@ -184,15 +193,28 @@ class PageRange:
 
 
         return startIndex, endIndex
+    
+    def insert_schema(self, schema:str, page:Page):
 
-    def insert_tailRec(self, newRecord:Record, baseRecord:Record):
+        numCols = len(schema)
+
+        # Convert the series of zeros to binary
+        binary_representation = int(schema, 2)
+
+        # Calculate the number of bytes needed
+        num_bytes = (numCols + 7) // 8
+
+        return
+        
+
+    def insert_tailRec(self, newRecord:Record, baseRecord:Record, currTailPage:list):
         
         basePagesNUM = baseRecord.base_page_indexNUM
-        tailPage = self.tail_page[basePagesNUM]
+        tailPage = currTailPage
         basePage = self.base_page[basePagesNUM]
 
-        if(tailPage[RID_COLUMN].num_records == 256):
-            print("tail pags is full")
+        if(tailPage[RID_COLUMN].num_records == 255):
+            print("tail page is full")
             return False
         
         self.num_tail_records +=1 
@@ -200,29 +222,17 @@ class PageRange:
         newRecord.ridLocStart, newRecord.ridLocEnd = self.insert_RID(newRecord.rid, tailPage[RID_COLUMN])      # insert rid into rid column page
         newRecord.startTimeLocStart,newRecord.startTimeLocEnd = self.insert_long(int(newRecord.startTime), tailPage[TIMESTAMP_COLUMN])      # insert start time into time column page
         newRecord.keyLocStart, newRecord.keyLocEnd = self.insert_long(newRecord.key, tailPage[KEY_COLUMN])      # insert key into key column page
-        newRecord.schema_encodingLocStart, newRecord.schema_encodingLocEnd =self.insert_schema(newRecord.schema_encoding, tailPage[SCHEMA_ENCODING_COLUMN])      # insert schema into schema column page)
+        # newRecord.schema_encodingLocStart, newRecord.schema_encodingLocEnd =self.insert_schema(newRecord.schema_encoding, tailPage[SCHEMA_ENCODING_COLUMN])      # insert schema into schema column page)
         
-        if(baseRecord.indirection == None):
-            baseRecord.indirection = newRecord.rid
-            newRecord.indirection = baseRecord.rid
-            self.replace_RID(baseRecord.indirection, basePage[INDIRECTION_COLUMN], baseRecord.indirectionLocStart, baseRecord.indirectionLocEnd)
-            self.replace_RID(newRecord.indirection, tailPage[INDIRECTION_COLUMN], newRecord.indirectionLocStart, newRecord.indirectionLocEnd)
-            return newRecord
-        else:
-            oldTailRID = baseRecord.indirection
-            baseRecord.indirection = newRecord.rid
-            newRecord.indirection = oldTailRID
-            self.replace_RID(baseRecord.indirection, basePage[INDIRECTION_COLUMN], baseRecord.indirectionLocStart, baseRecord.indirectionLocEnd)
-            self.replace_RID(newRecord.indirection, basePage[INDIRECTION_COLUMN], baseRecord.indirectionLocStart, baseRecord.indirectionLocEnd)
-            return oldTailRID
+        for i in range(self.num_columns-1):
+            tailPage[KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
 
-        for i in range(self.table.num_columns-1):
-            recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
-        # return self.table.index.insert_newrec(newRecord)
-
-        self.table.page_directory.update({newRecord.key:recentRange.base_page[basePagesNUM]})     # update page directory with new key and page address
-        
-        self.table.index.insert_newrec(newRecord)
+        # oldTailRID = baseRecord.indirection
+        # baseRecord.indirection = newRecord.rid
+        # newRecord.indirection = oldTailRID
+        self.replace_RID(baseRecord.indirection, basePage[INDIRECTION_COLUMN], baseRecord.indirectionLocStart, baseRecord.indirectionLocEnd)
+        self.replace_RID(newRecord.indirection, basePage[INDIRECTION_COLUMN], baseRecord.indirectionLocStart, baseRecord.indirectionLocEnd)
+        return newRecord
     
 # Each Table should have both Base and Tail pages 
 
@@ -233,7 +243,7 @@ class Table:
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-        def __init__(self, name, num_columns, key, path=None, bufferpool=None):
+    def __init__(self, name, num_columns, key, path=None, bufferpool=None):
         self.name = name  # set name of table
         self.table_path = path
         self.key = key  # set table key

@@ -45,14 +45,13 @@ class Page:
             returnData.append(byte_array[i])                                            # full returnData list
         return returnData                                                               # return the returnData list
     
-    def read_byte_by_index(self, recordObj, column):                        # read data inside page bytearray() for a specified column
+    def read_byte_by_index(self, recordObj, loc):                        # read data inside page bytearray() for a specified column
         bytearr = self.data
         returnData = []
-        start_index = recordObj.getStart()                                              # get the start index of data inside bytearray
-        last_index = recordObj.getEnd()                                                 # get the end index of data inside bytearray
-        returnval = bytearr[start_index + column] 
-        for i in range(start_index, last_index):                                        # for loop to read byte_array
-            returnData.append(bytearr[i])                                            # full returnData list
+        # start_index = recordObj.getStart()                                              # get the start index of data inside bytearray
+        # last_index = recordObj.getEnd()                                                 # get the end index of data inside bytearray
+        returnval = bytearr[loc] 
+
         return returnval                                                               # return the returnData list
 
     def recordColDel(self, RecordObj):                                                  # delete column data from record object after writing to byte array

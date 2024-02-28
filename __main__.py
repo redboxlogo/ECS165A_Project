@@ -68,13 +68,13 @@ if(updateFlag == True):
 
 ################################################################################################################################
 
-selectFlag = False
+selectFlag = True
 
 if(selectFlag == True):
     # Measuring Select Performance
     select_time_0 = time()                                              #get time
     print(select_time_0)
-    for i in range(0, 1000000):                                                   #select 10k records
+    for i in range(0, 10000):                                                   #select 10k records
         query.select(choice(keys),0 , [1, 1, 1, 1, 1])                          #call select() from query
     select_time_1 = time()                                              #get time
     print(select_time_1)
@@ -83,13 +83,13 @@ if(selectFlag == True):
 
 ################################################################################################################################
 
-sumFlag = False
+sumFlag = True
 
 if(sumFlag == True):
     # Measuring Aggregate Performance
     agg_time_0 = time()                                                 #get time
     print(agg_time_0)
-    for i in range(0, 1000000, 100):                                              #for loop
+    for i in range(0, 10000, 100):                                              #for loop
         start_value = 906659671 + i                                             #create start value
         end_value = start_value + 100                                           #create end value
         result = query.sum(start_value, end_value - 1, randrange(0, 5))         #call sum() from query for columns 0-4

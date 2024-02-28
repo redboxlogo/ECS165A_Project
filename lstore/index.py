@@ -53,15 +53,18 @@ class Index:
         return True  # Successfully inserted the record
 
     def insert_tailrec(self, record):
+        if(record == False):
+            print("record is false")
+            return False
         rids1 = record.rid  # record object has self.rid
         # Add the tail record to the index for the specified rid
         self.rid_to_tail_records[rids1] = record
         return True  # Successfully inserted the record
     
     def lookup_tail(self,rids1):
-        for rids1 in self.rid_to_tail_records:
+        if rids1 in self.rid_to_tail_records:
             return self.rid_to_tail_records[rids1]
-        pass
+        return False
 
     def lookup(self, key):
         # Check if the key exists in the indices dictionary
