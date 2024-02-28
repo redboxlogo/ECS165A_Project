@@ -35,23 +35,23 @@ class Query:
             return False  # Return False if the base page does not exist for the given primary key.
 
         # Use the getRecord method to check if the record exists in the base page's metadata.
-        record = basePage.getRecord(primary_key)
+        record = self.table.index.lookup(primary_key) 
+
         if record is None:
             #logger.info("Delete failed for Record, key does not exist in page metadata, key: {}".format(primary_key))
             return False  # Return False if the record metadata does not exist within the base page.
 
-        # Proceed to delete it from the base page's record metadata.
-        del basePage.record_metadata[primary_key]
+        del self.table.index.indices[primary_key]
 
-        # Call remove_NumRecords to decrement the number of records in the page after deletion.
-        basePage.remove_NumRecords()
+        # # Call remove_NumRecords to decrement the number of records in the page after deletion.
+        # basePage.remove_NumRecords()
 
         # Remove the record from the page directory.
-        del self.table.page_directory[primary_key]
+        # del self.table.page_directory[primary_key]
 
         # Update the index to reflect the deletion.
         # Use self.table.key to reference the primary key column.
-        self.table.index.remove(self.table.key, primary_key)
+        # self.table.index.remove(self.table.key, primary_key)
 
         #logger.info("Delete success for Record key: {}".format(primary_key))
 
@@ -84,7 +84,7 @@ class Query:
         newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
 
 
-        recentRange = self.table.page_ranges[-1]
+        recentRange = self.table.page_range[-1]
         if(recentRange.capacity_check() == False):
             recentRange = self.table.newPageRange()
 
@@ -139,7 +139,7 @@ class Query:
 
         current_bpage = self.table.getBasePage(search_key)  # gets current, most updated base page
         current_bRec = self.table.index.lookup(search_key)  # gets current, most updated base page
-        currRange = self.table.page_ranges[current_bRec.page_range_indexNUM]
+        currRange = self.table.page_range[current_bRec.page_range_indexNUM]
         first_column = projected_columns_index.pop(0)  # first column value (0 or 1)
 
         # if 0, append nothing; if 1, we return the key of the record metadata
@@ -202,7 +202,7 @@ class Query:
         updateColumns = list(columns)
         baseRecordObj = self.table.index.lookup(primary_key)
         # print(baseRecordObj.base_page_indexNUM)
-        currRange = self.table.page_ranges[baseRecordObj.page_range_indexNUM]
+        currRange = self.table.page_range[baseRecordObj.page_range_indexNUM]
         fullTailRange = currRange.tail_page[baseRecordObj.base_page_indexNUM]
         currTailPage = fullTailRange[:(self.table.num_columns+4)]
         # currTailPageIndex = (self.table.num_columns+4)
@@ -293,15 +293,13 @@ class Query:
     """
     def sum(self, start_key, end_key, aggregate_column_index):
         sumList = []
+        # print(aggregate_column_index)
         aggregate_column_index -= 1
         found_valid_data = False  # Flag to track if any valid data is aggregated
 
         for i in range(start_key, end_key + 1):
-            base_page = None
-            if i in self.table.page_directory:
-               # Get the base page for the current key
-               basePage = self.table.getBasePage(i)
-            #    print(basePage[0].directoryID)
+
+            basePage = self.table.getBasePage(i)
 
             if basePage is None:
                 print("cant find page")
@@ -316,12 +314,14 @@ class Query:
                 sumList.append(0)  # Reflect missing record in aggregation
                 continue  # Proceed to the next key in the range
 
+            # print(basePage[KEY_COLUMN+1+aggregate_column_index].directoryID)
+
             # A valid record is found, process it
             found_valid_data = True
             if aggregate_column_index == -1:
                 sumList.append(record.key)
             else:
-                value = base_page.read_byte_by_index(record, aggregate_column_index)
+                value = basePage[KEY_COLUMN+1+aggregate_column_index].read_byte_by_index(record, (aggregate_column_index+1))
                 sumList.append(value)
 
         # After processing the range, check if any valid data was aggregated

@@ -274,9 +274,9 @@ class Table:
         pass
 
     def newPageRange(self):
-        mostRecent = self.page_ranges[-1]
+        mostRecent = self.page_range[-1]
         newRange = PageRange(num_columns=mostRecent.num_columns, parent_key=mostRecent.table_key, pr_key=(mostRecent.key+1))
-        self.page_ranges.append(newRange)
+        self.page_range.append(newRange)
         return newRange
     
     # helper function to set Base record after insert retaining read-only properties of base page
