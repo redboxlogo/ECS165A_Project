@@ -4,6 +4,7 @@ from lstore.page import Page
 from lstore.logger import logger
 from uuid import uuid4
 from lstore.config import *
+import copy
 
 class Query:
     """
@@ -94,7 +95,7 @@ class Query:
             newRecord.ridLocStart, newRecord.ridLocEnd = recentRange.insert_RID(newRecord.rid, recentRange.base_page[basePagesNUM][RID_COLUMN])      # insert rid into rid column page
             newRecord.startTimeLocStart,newRecord.startTimeLocEnd = recentRange.insert_long(int(newRecord.startTime), recentRange.base_page[basePagesNUM][TIMESTAMP_COLUMN])      # insert start time into time column page
             newRecord.keyLocStart, newRecord.keyLocEnd = recentRange.insert_long(newRecord.key, recentRange.base_page[basePagesNUM][KEY_COLUMN])      # insert key into key column page
-            recentRange.insert_schema(schema_encoding, recentRange.base_page[basePagesNUM][SCHEMA_ENCODING_COLUMN])      # insert schema into schema column page)
+            newRecord.schema_encodingLocStart, newRecord.schema_encodingLocEnd =recentRange.insert_schema(schema_encoding, recentRange.base_page[basePagesNUM][SCHEMA_ENCODING_COLUMN])      # insert schema into schema column page)
             recentRange.base_page[basePagesNUM][INDIRECTION_COLUMN].num_records += 1
             recentRange.base_page[basePagesNUM][INDIRECTION_COLUMN].nextDataBlock = recentRange.base_page[basePagesNUM][RID_COLUMN].nextDataBlock
             newRecord.indirectionLocStart = newRecord.ridLocStart
@@ -105,15 +106,11 @@ class Query:
 
             for i in range(self.table.num_columns-1):
                 recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
-            return self.table.index.insert_newrec(newRecord)
+            # return self.table.index.insert_newrec(newRecord)
 
             self.table.page_directory.update({newRecord.key:recentRange.base_page[basePagesNUM]})     # update page directory with new key and page address
             
-            
-            
-            self.table.temp_record_directory.update({newRecord.key:newRecord})     # update page directory with new key and page address
-
-            # insert record object into index
+            self.table.index.insert_newrec(newRecord)
 
             return True
 
@@ -192,17 +189,52 @@ class Query:
 
         updateColumns = list(columns)
 
-        recordObj = self.table.temp_record_directory.get(primary_key)
-
-        currRange = self.table.page_ranges[recordObj.page_range_indexNUM]
+        baseRecordObj = self.table.index.lookup(primary_key)
+        currRange = self.table.page_ranges[baseRecordObj.page_range_indexNUM]
 
         # print(currRange.base_page[recordObj.base_page_indexNUM])
         # print(basePage)
 
-        currTailPage = currRange.tail_page[recordObj.base_page_indexNUM]
+        currTailPage = currRange.tail_page[baseRecordObj.base_page_indexNUM]
 
         indices_not_none = [index for index, value in enumerate(updateColumns) if value is not None]
-        print(indices_not_none)
+
+        # print(baseRecordObj.indirectionLocStart)
+        # print(baseRecordObj.indirectionLocEnd)
+        # print(currTailPage[INDIRECTION_COLUMN])
+
+        # if(currTailPage[INDIRECTION_COLUMN] == None):
+        #     # currTailPage[INDIRECTION_COLUMN] = Page("Tail Indirection")
+        #     print(currTailPage)
+
+        if(baseRecordObj.indirection == None):
+            FIRSTTailRecord = copy.deepcopy(baseRecordObj)
+            FIRSTTailRecord.rid = uuid4().hex
+            FIRSTTailRecord = currRange.insert_tailRec(FIRSTTailRecord, baseRecordObj)
+            self.table.index.insert_tailrec(FIRSTTailRecord)
+
+        else: # baseRecordObj !=
+
+
+
+        # TailRecord.ridLocStart, TailRecord.ridLocEnd = currTailPage[INDIRECTION_COLUMN].store_hex_in_bytearray()
+
+
+        # schema encode
+        # the data that needs to be changed
+
+
+        for i in indices_not_none:
+            print(i)
+        # basePage[KEY_COLUMN+]
+
+
+
+        # newTailRec = Record(TailRid, , primary_key, )
+        # Record(RID, schema_encoding, key, columns) 
+
+
+        # print(basePage[INDIRECTION_COLUMN].recordObj.)
 
 
         # tailPage = currPageRange.tail_page[]

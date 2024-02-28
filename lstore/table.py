@@ -126,8 +126,23 @@ class PageRange:
             default_names.append(f"data_column {i + 1}")
         self.base_page = [[Page(name) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
         # self.tail_page = [None] * PAGE_RANGE_SIZE
+        tail_names = ["Tail_INDIRECTION","Tail_RID", "Tail_TIME", "Tail_SCHEMA", "Tail_KEY"]  # Template for generating page names
+        for i in range(self.num_columns - 1):
+            tail_names.append(f"Tail_data_column {i + 1}")
+        
+        self.tail_page = [[Page(name) for name in tail_names] for _ in range(PAGE_RANGE_SIZE)]
 
-        self.tail_page = [[None for i in range(len(default_names))] for _ in range(PAGE_RANGE_SIZE)]
+
+
+    # Function to fill the None elements with Page objects
+    def fill_none_with_Tailpages(self):
+        
+        name_template = ["Tail_INDIRECTION","Tail_RID", "Tail_TIME", "Tail_SCHEMA", "Tail_KEY"]  # Template for generating page names
+        for i in range(self.num_columns - 1):
+            name_template.append(f"Tail_data_column {i + 1}")
+        
+        self.tail_page = [[Page(name) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
+
 
     def capacity_check(self):
         if(self.base_page[-1][RID_COLUMN].num_records == 256):
@@ -148,6 +163,10 @@ class PageRange:
         startIndex, endIndex = page.store_hex_in_bytearray(RID)
         return startIndex, endIndex
     
+    def replace_RID(self, RID:hex , page:Page, start:int, end:int):
+
+        return page.store_hex_in_bytearray_by_index(RID,start,end)
+    
     def insert_schema(self, schema:str, page:Page):
         
         numCols = len(schema)
@@ -166,7 +185,44 @@ class PageRange:
 
         return startIndex, endIndex
 
+    def insert_tailRec(self, newRecord:Record, baseRecord:Record):
+        
+        basePagesNUM = baseRecord.base_page_indexNUM
+        tailPage = self.tail_page[basePagesNUM]
+        basePage = self.base_page[basePagesNUM]
 
+        if(tailPage[RID_COLUMN].num_records == 256):
+            print("tail pags is full")
+            return False
+        
+        self.num_tail_records +=1 
+            
+        newRecord.ridLocStart, newRecord.ridLocEnd = self.insert_RID(newRecord.rid, tailPage[RID_COLUMN])      # insert rid into rid column page
+        newRecord.startTimeLocStart,newRecord.startTimeLocEnd = self.insert_long(int(newRecord.startTime), tailPage[TIMESTAMP_COLUMN])      # insert start time into time column page
+        newRecord.keyLocStart, newRecord.keyLocEnd = self.insert_long(newRecord.key, tailPage[KEY_COLUMN])      # insert key into key column page
+        newRecord.schema_encodingLocStart, newRecord.schema_encodingLocEnd =self.insert_schema(newRecord.schema_encoding, tailPage[SCHEMA_ENCODING_COLUMN])      # insert schema into schema column page)
+        
+        if(baseRecord.indirection == None):
+            baseRecord.indirection = newRecord.rid
+            newRecord.indirection = baseRecord.rid
+            self.replace_RID(baseRecord.indirection, basePage[INDIRECTION_COLUMN], baseRecord.indirectionLocStart, baseRecord.indirectionLocEnd)
+            self.replace_RID(newRecord.indirection, tailPage[INDIRECTION_COLUMN], newRecord.indirectionLocStart, newRecord.indirectionLocEnd)
+            return newRecord
+        else:
+            oldTailRID = baseRecord.indirection
+            baseRecord.indirection = newRecord.rid
+            newRecord.indirection = oldTailRID
+            self.replace_RID(baseRecord.indirection, basePage[INDIRECTION_COLUMN], baseRecord.indirectionLocStart, baseRecord.indirectionLocEnd)
+            self.replace_RID(newRecord.indirection, basePage[INDIRECTION_COLUMN], baseRecord.indirectionLocStart, baseRecord.indirectionLocEnd)
+            return oldTailRID
+
+        for i in range(self.table.num_columns-1):
+            recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
+        # return self.table.index.insert_newrec(newRecord)
+
+        self.table.page_directory.update({newRecord.key:recentRange.base_page[basePagesNUM]})     # update page directory with new key and page address
+        
+        self.table.index.insert_newrec(newRecord)
     
 # Each Table should have both Base and Tail pages 
 
@@ -182,7 +238,6 @@ class Table:
         self.key = key                                  # set table key
         self.num_columns = num_columns                  # number of columns
         self.page_directory = {}                        # dictionary given a record key, it should return the page address/location
-        self.temp_record_directory = {}                 # temp directory while index is being built
         self.page_ranges = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
         self.index = Index(self)
 

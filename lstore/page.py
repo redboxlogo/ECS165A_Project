@@ -19,7 +19,6 @@ class Page:
     def remove_NumRecords(self):               # remove record from page
         self.num_records -= 1                  # decrement record count
         
-
     def fill_bytearray(self, value):                         # function used to fill column data into bytearray()
         start_index = self.nextDataBlock                                                          # get start location for write op (append)
         self.data[start_index] = value
@@ -27,6 +26,15 @@ class Page:
         self.nextDataBlock += 1
         self.num_records += 1
         return start_index                                                  # return the start and last index
+
+    def fill_bytearray_by_index(self,start, end, new_value):
+        startIndex = start
+        endIndex = end
+
+        for i in range(start, end):
+            self.data[i] = new_value
+
+        return None
 
     def read_bytearray(self,recordObj):                                    # read data inside page bytearray()
         returnData = []                                                                 # initialize returnData list containing the data
@@ -73,6 +81,7 @@ class Page:
         # Calculate how much of the bytearray will be filled
         bytes_to_fill = min(PAGE_SIZE, len(hex_bytes))
 
+        bytes_to_fill = start+bytes_to_fill
         # Fill the beginning of the bytearray with the hex bytes
         result[start:bytes_to_fill] = hex_bytes[:bytes_to_fill]
 
@@ -80,6 +89,22 @@ class Page:
         self.nextDataBlock = bytes_to_fill
 
         return start, self.nextDataBlock
+    
+    def store_hex_in_bytearray_by_index(self, hex_value:hex, start, end):
+        # Convert hex string to bytes
+        hex_bytes = bytes.fromhex(hex_value)
+
+        # Create a bytearray of the specified size
+        result = self.data
+
+        # get start position for writing 
+        start = start
+
+        bytes_to_fill = end
+        # Fill the beginning of the bytearray with the hex bytes
+        result[start:bytes_to_fill] = hex_bytes[:bytes_to_fill]
+
+        return result[start:bytes_to_fill]
 
     def parse_integer_to_nibbles(self, number:int):
 
