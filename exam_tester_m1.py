@@ -31,14 +31,14 @@ for i in range(0, number_of_records):
 
     records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
 
-    if(key == 92107195):
-        print("debug stop")
-    if(key == 921074265):
-        print("debug stop")
-    if(key == 92107426):
-        print("debug stop")
-    if(key == 92107427):
-        print("debug stop")
+    # if(key == 92107195):
+    #     print("debug stop")
+    # if(key == 921074265):
+    #     print("debug stop")
+    # if(key == 92107426):
+    #     print("debug stop")
+    # if(key == 92107427):
+    #     print("debug stop")
 
     query.insert(*records[key])
     print('inserted', records[key])

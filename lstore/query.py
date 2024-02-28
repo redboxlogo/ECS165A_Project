@@ -2,7 +2,10 @@ from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.page import Page
 from lstore.logger import logger
-
+from uuid import uuid4
+from lstore.config import *
+from time import time
+import copy
 
 class Query:
     """
@@ -13,6 +16,7 @@ class Query:
     """
     def __init__(self, table):
         self.table = table
+
         pass
         
 
@@ -31,23 +35,23 @@ class Query:
             return False  # Return False if the base page does not exist for the given primary key.
 
         # Use the getRecord method to check if the record exists in the base page's metadata.
-        record = basePage.getRecord(primary_key)
+        record = self.table.index.lookup(primary_key) 
+
         if record is None:
             #logger.info("Delete failed for Record, key does not exist in page metadata, key: {}".format(primary_key))
             return False  # Return False if the record metadata does not exist within the base page.
 
-        # Proceed to delete it from the base page's record metadata.
-        del basePage.record_metadata[primary_key]
+        del self.table.index.indices[primary_key]
 
-        # Call remove_NumRecords to decrement the number of records in the page after deletion.
-        basePage.remove_NumRecords()
+        # # Call remove_NumRecords to decrement the number of records in the page after deletion.
+        # basePage.remove_NumRecords()
 
         # Remove the record from the page directory.
-        del self.table.page_directory[primary_key]
+        # del self.table.page_directory[primary_key]
 
         # Update the index to reflect the deletion.
         # Use self.table.key to reference the primary key column.
-        self.table.index.remove(self.table.key, primary_key)
+        # self.table.index.remove(self.table.key, primary_key)
 
         #logger.info("Delete success for Record key: {}".format(primary_key))
 
@@ -59,10 +63,10 @@ class Query:
     # Return True upon succesful insertion
     # Returns False if insert fails for whatever reason
     """
-    # need to check for duplicate inserts
     def insert(self, *columns):
-
-        if(self.table.getBasePage(columns[0]) != None):
+        # if(columns[0] == 906661711):
+        #     print("debug")
+        if(self.table.getBasePage(columns[0]) != None):                 #check for duplicates
             print("Record already in directory")
             #logger.info("failed to insert record with key: {}".format(self.table.getBasePage(columns[0])))
 
@@ -70,28 +74,53 @@ class Query:
 
 
         columns = list(columns)
-        RID = columns[0]                                                # temp assignment POSSIBLE CHANGE 
-        key = columns[0]                                                # temp assignment POSSIBLE CHANGE 
+        RID = uuid4().hex                                               # assign hex RID to record 
+        key = columns[0]                                                # extract the key from the input
         columns.pop(0)                                                  # removing the key
-        schema_encoding = [0] * (self.table.num_columns-1)              # assign schema encoding to new records
+        # schema_encoding = bytes()                                       # assign schema encoding as a single empty byte      
+        schema_encoding = '0' * (self.table.num_columns-1) 
+        
+        
         newRecord = Record(RID, schema_encoding, key, columns)          # create a new Record() object from table.py
-        if (self.table.page_directory == {}):
 
-            BaseP = self.table.newPage(-1)                              # create FIRST base page "-1"
-            BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page
-            self.table.base_page.append(BaseP)                          # append page table of contents (only needs to be done for first page "-1")
-            self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
-            # logger.info("Base page: -1 created")
-            # logger.info("new record inserted to Base Page with key: {}".format(newRecord.key))
+
+        recentRange = self.table.page_range[-1]
+        if(recentRange.capacity_check() == False):
+            recentRange = self.table.newPageRange()
+
+
+        for basePagesNUM in range(PAGE_RANGE_SIZE):
+
+            if(recentRange.base_page[basePagesNUM][RID_COLUMN].num_records == MAX_RECORDS):
+                continue
+            
+            newRecord.ridLocStart, newRecord.ridLocEnd = recentRange.insert_RID(newRecord.rid, recentRange.base_page[basePagesNUM][RID_COLUMN])      # insert rid into rid column page
+            newRecord.startTimeLocStart,newRecord.startTimeLocEnd = recentRange.insert_long(int(newRecord.startTime), recentRange.base_page[basePagesNUM][TIMESTAMP_COLUMN])      # insert start time into time column page
+            newRecord.keyLocStart, newRecord.keyLocEnd = recentRange.insert_long(newRecord.key, recentRange.base_page[basePagesNUM][KEY_COLUMN])      # insert key into key column page
+            newRecord.schema_encodingLocStart, newRecord.schema_encodingLocEnd = recentRange.allocate_schema(schema_encoding, recentRange.base_page[basePagesNUM][SCHEMA_ENCODING_COLUMN])      # insert schema into schema column page)
+            recentRange.base_page[basePagesNUM][INDIRECTION_COLUMN].num_records += 1
+            recentRange.base_page[basePagesNUM][INDIRECTION_COLUMN].nextDataBlock = recentRange.base_page[basePagesNUM][RID_COLUMN].nextDataBlock
+            newRecord.indirectionLocStart = newRecord.ridLocStart
+            newRecord.indirectionLocEnd = newRecord.ridLocEnd
+
+            newRecord.page_range_indexNUM = recentRange.key
+            newRecord.base_page_indexNUM = basePagesNUM
+
+            for i in range(self.table.num_columns-1):
+                elementIndex = recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
+                newRecord.columnsLoc.append(elementIndex)
+            # return self.table.index.insert_newrec(newRecord)
+
+            self.table.page_directory.update({newRecord.key:recentRange.base_page[basePagesNUM]})     # update page directory with new key and page address
+            
+            self.table.index.insert_newrec(newRecord)
+
             return True
 
-        else:
 
-            BaseP = self.table.base_page[-1]                            # access the last base_page in the list "-1" DOES NOT REFER TO THE PAGE NUMBER
-            BaseP = self.table.setBase(BaseP,newRecord)                 # set new record into base page/ create new base page if first is full
-            self.table.page_directory.update({newRecord.key:BaseP})     # update page directory with new key and page address
-            # logger.info("new record inserted to Base Page with key: {}".format(newRecord.key))
-            return True
+        return True
+        # logger.info("new record inserted to Base Page with key: {}".format(newRecord.key))
+
 
         
 
@@ -108,25 +137,44 @@ class Query:
         records_list = []  # initialize list of Record objects to return
         data_list = []  # initialize list 
 
-        current_bpage = self.table.getBasePage(search_key)  # gets current, most updated base page
-        current_record_metadata = current_bpage.getRecord(search_key)  # gets metadata of record
-
+        current_page = self.table.getBasePage(search_key)  # gets current, most updated base page
+        current_Rec = self.table.index.lookup(search_key)  # gets current, most updated base page
+        currRange = self.table.page_range[current_Rec.page_range_indexNUM]
         first_column = projected_columns_index.pop(0)  # first column value (0 or 1)
+
+        if(current_Rec.indirection != None):
+            # print(current_bRec.indirection)
+            # print(current_Rec)
+            current_Rec = self.table.index.lookup_tail(current_Rec.indirection)
+            # print(current_Rec)
+            current_page = self.table.page_range[current_Rec.page_range_indexNUM].tail_page[current_Rec.base_page_indexNUM]
+            current_Rec.columns.pop(0)
+            
+
+
         # if 0, append nothing; if 1, we return the key of the record metadata
         if first_column == 0:
             data_list.append(None)
         else:
-            data_list.append(current_record_metadata.key)
+            data_list.append(current_Rec.key)
 
-        byte_info = current_bpage.read_bytearray(current_record_metadata)  # gets data from bpage
-        for i in range(len(byte_info)):  # loop through the data
+        # print(projected_columns_index)
+
+        for i in range(len(projected_columns_index)):  # loop through the data
+            # print(projected_columns_index[i])
             if projected_columns_index[i] == 1:
-                data_list.append(byte_info[i])  # if value is 1, then we append the byt info at given index 
+
+                # print(current_page[KEY_COLUMN+i+1].directoryID)
+                # print(current_Rec.columnsLoc[i])
+                # print(current_page[KEY_COLUMN+i+1].data[current_Rec.columnsLoc[i]])
+                # data_list.append(current_page[KEY_COLUMN+i+1].data[current_Rec.columnsLoc[i]])                      ################################## should read from page
+                data_list.append(current_Rec.columns[i])
             else:
                 data_list.append(None)  # otherwise, we append None
 
-        current_record_metadata.columns = data_list # puts everything from data_list into the columns of the record
-        records_list.append(current_record_metadata)  # append record metadata and return
+        # print(data_list)
+        current_Rec.columns = data_list # puts everything from data_list into the columns of the record
+        records_list.append(current_Rec)  # append record metadata and return
         # logger.info("selecting Record with key: {}".format(current_record_metadata.key))
         return records_list
     
@@ -150,6 +198,8 @@ class Query:
     # Indexes always point to base records, and they never directly point to any tail records, so tail pages must be completed in update.
     """
     def update(self, primary_key, *columns):
+
+        # print(primary_key)
         
         try:
             basePage = self.table.getBasePage(primary_key)              # get the base page that contains the record
@@ -162,22 +212,65 @@ class Query:
             print("key does not exist in directory")
 
         updateColumns = list(columns)
-        TailPage = self.table.getTailPage()                         # get last/create new tail record
-        try:
-            originalRecord = basePage.getRecord(primary_key)            # get the record from the base page
-        except:
-            # logger.info("Update failed, key does not exist in page metadata key: {}".format(primary_key))
-            return False
-            print("failed to get record")
-        currTable = self.table
+        baseRecordObj = self.table.index.lookup(primary_key)
+        # print(baseRecordObj.base_page_indexNUM)
+        currRange = self.table.page_range[baseRecordObj.page_range_indexNUM]
+        fullTailRange = currRange.tail_page[baseRecordObj.base_page_indexNUM]
+        currTailPage = fullTailRange[:(self.table.num_columns+4)]
+        # currTailPageIndex = (self.table.num_columns+4)
 
 
+        # check capacity of tail page
+        while(currTailPage[RID_COLUMN].num_records == MAX_RECORDS):
 
-        if(updateColumns[0] == -999):                                         # condition for delete record
-            
-            pass        
+            tail_names = ["Tail_INDIRECTION","Tail_RID", "Tail_TIME", "Tail_SCHEMA", "Tail_KEY"]  # Template for generating page names
+            for i in range(self.table.num_columns - 1):
+                tail_names.append(f"Tail_data_column {i + 1}")
+            currTailPage = [Page(name) for name in tail_names]
+            currRange.tail_page[baseRecordObj.page_range_indexNUM].extend(currTailPage)
 
-        # if(updateColumns[0] != None):                                       # potentially perform a key update
+
+                
+
+
+        indices_not_none = [index for index, value in enumerate(updateColumns) if value is not None]
+
+
+        if(baseRecordObj.indirection == None):
+            FIRSTTailRecord = copy.deepcopy(baseRecordObj)
+            FIRSTTailRecord.rid = uuid4().hex
+            FIRSTTailRecord.indirection = baseRecordObj.rid
+            baseRecordObj.indirection = FIRSTTailRecord.rid
+            self.table.index.insert_tailrec(FIRSTTailRecord)
+            #insert_tailRec does not handle indirection rearrangement
+            FIRSTTailRecord = currRange.insert_tailRec(FIRSTTailRecord, baseRecordObj,currTailPage)
+
+        # if(primary_key == 906660054):
+        #     print("debug")
+
+        # check capacity of tail page
+        while(currTailPage[RID_COLUMN].num_records == MAX_RECORDS):
+
+            tail_names = ["Tail_INDIRECTION","Tail_RID", "Tail_TIME", "Tail_SCHEMA", "Tail_KEY"]  # Template for generating page names
+            for i in range(self.table.num_columns - 1):
+                tail_names.append(f"Tail_data_column {i + 1}")
+            currTailPage = [Page(name) for name in tail_names]
+            currRange.tail_page[baseRecordObj.page_range_indexNUM].extend(currTailPage)
+
+
+        # print(self.table.index.lookup_tail(baseRecordObj.indirection).key)
+        recentTailRec = self.table.index.lookup_tail(baseRecordObj.indirection)
+
+        newTail = copy.deepcopy(recentTailRec)
+        newTail.startTime = int(time())
+        newTail.schema_encoding = '0' * (len(columns)-1) 
+        newTail.indirection = recentTailRec.rid
+        newTail.rid = uuid4().hex
+
+        baseRecordObj.indirection = newTail.rid
+
+        if(updateColumns[0] != None):                                       # potentially perform a key update
+            pass
         #     print("updating key")
         #     print("old key:")
         #     print(originalRecord.key)
@@ -191,39 +284,15 @@ class Query:
         #     print("new key")
         #     print(originalRecord.key)
 
+        for i in indices_not_none:
+
+            newTail.columns[i] = updateColumns[i]
+            newTail.schema_encoding = newTail.flip_bit(newTail.schema_encoding, i-1)
 
 
-        indirectionExists = originalRecord.checkIndirection()                                           # check for pre-existing indirection pointer
-        if(indirectionExists == True):                                                                  # if indirection pointer exists, do a pointer redirection
-            TailRec = originalRecord.getIndirection()                                                   # if indirection from base record exists, store in "TailRec"
-            newTailRec = TailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)    # add new tail record and update base page with new tail record
-            writeSucc = TailPage.write(newTailRec)                                                      # writeSucc == true if write was successful; false if page is full
-            if(writeSucc == False):                                                                     # if write() failed
-                newID = TailPage.directoryID-1                                                          # create new basepage ID 
-                newTailPage = self.table.newPage(newID)                                                 # create new tail page
-                self.table.tail_page.append(newTailPage)                                                # append new tail page to tail page list
-                newTailPage.write(newTailRec)                                                           # write record to new tail page
-                # logger.log("New Tail created with key: {}".format(newID))
-            # logger.info("Updated Record with key: {}".format(primary_key))
-
-            return True
-        
-        else:                                                                                               # if indirection pointer doesnt exist
-            baseRecCols = originalRecord.getallCols(basePage)                                               # get column data of base
-            TailPage = self.table.setTailPage(TailPage, originalRecord, baseRecCols)                        # create first copy of original record in Tail page and return said record page
-            firstTailRec = originalRecord.getIndirection()                                                  # get first copy of record in Tail page
-            newTailRec = firstTailRec.updateTailRec(originalRecord, basePage, primary_key, updateColumns)   # add new tail record and update base page with new tail record
-            writeSucc = TailPage.write(newTailRec)                                                          # writeSucc == true if write was successful; false if page is full
-            if(writeSucc == False):                                                                         # if write() failed
-                newID = TailPage.directoryID-1                                                              # create new basepage ID 
-                newTailPage = self.table.newPage(newID)                                                     # create new tail page
-                self.table.tail_page.append(newTailPage)                                                    # append new tail page to tail page list
-                newTailPage.write(newTailRec)                                                               # write record to new tail page
-                # logger.log("New Tail created with key: {}".format(newID))
-            # logger.info("Updated Record with key: {}".format(primary_key))
-
-            # print(TailPage.read_bytearray(TailPage.data,newTailRec))
-            return True
+        newTail = currRange.insert_tailRec(newTail, baseRecordObj, currTailPage)
+        self.table.index.insert_tailrec(newTail)
+        return True
 
     
     """
@@ -235,37 +304,43 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_key, end_key, aggregate_column_index):
-        # print(aggregate_column_index)
         sumList = []
+        # print(aggregate_column_index)
         aggregate_column_index -= 1
+        found_valid_data = False  # Flag to track if any valid data is aggregated
 
-        for i in range(start_key, end_key+1):
-           # Check if the primary key exists in the page directory
-            if i in self.table.page_directory:
-               # Get the base page for the current key
-               basePage = self.table.getBasePage(i)
+        for i in range(start_key, end_key + 1):
+
+            basePage = self.table.getBasePage(i)
 
             if basePage is None:
                 print("cant find page")
                 return False
 
             # Use the getRecord method to access the record
-            record = basePage.getRecord(i) 
+            record = self.table.index.lookup(i) 
+
 
             if record is None:
-                print("cant find record with key:")
-                print(i)
-                return False
+                print(f"Can't find record with key: {i}")
+                sumList.append(0)  # Reflect missing record in aggregation
+                continue  # Proceed to the next key in the range
 
-            if aggregate_column_index == -1:                 # sum the key column
-                #use record.key for summing
+            # print(basePage[KEY_COLUMN+1+aggregate_column_index].directoryID)
+
+            # A valid record is found, process it
+            found_valid_data = True
+            if aggregate_column_index == -1:
                 sumList.append(record.key)
-            else:                                           # sum columns that are not the key
+            else:
+                value = basePage[KEY_COLUMN+1+aggregate_column_index].read_byte_by_index(record, (aggregate_column_index+1))
+                sumList.append(value)
 
-                sumList.append(basePage.read_byte_by_index(record, aggregate_column_index))
+        # After processing the range, check if any valid data was aggregated
+        if not found_valid_data:
+            return False  # No valid data found in the entire range
 
-
-        # print(sumList)
+        # Return the total sum of aggregated data
         return sum(sumList)
 
     
