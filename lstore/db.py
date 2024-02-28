@@ -15,7 +15,6 @@ class Database:
         self.root = None  # name of the root node
         pass
 
-    # Not required for milestone1
     def open(self, root_path):
         self.bufferpool = Bufferpool(root_path)
         # print(os.listdir(root_path))
@@ -96,7 +95,6 @@ class Database:
     def create_table(self, name, num_columns, key_index):
 
         table_path = f"{self.root}/{name}"  # write name of path for the table
-        # print(table_path)
         if os.path.isdir(table_path):  # if table_path exists in directory
             raise Exception(f"Table name, {name}, already exists.")
         else:

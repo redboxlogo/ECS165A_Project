@@ -6,6 +6,7 @@ from lstore.config import *
 
 # Student Id and 4 grades
 db = Database()                                                             # create database object from db.py
+db.open('./TEST')
 grades_table = db.create_table('Grades', 5, 0)                              # call create_table() to create table with name = Grades, columns = 5, index = 0 from db.py
 query = Query(grades_table)                                                 # call Query() to create Query object rom query.py 
 keys = []                                                                   # create local "keys" variable
