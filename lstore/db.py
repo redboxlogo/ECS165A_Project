@@ -5,11 +5,12 @@ import shutil
 import json
 import pickle
 
-class Database():
+
+class Database:
 
     def __init__(self):
         self.tables = {}  # stores table data
-        self.bufferpool = None
+        self.bufferpool = None  # sets bufferpool
         self.table_directory = {}  # maps table names to table information
         self.root = None  # name of the root node
         pass
@@ -17,6 +18,7 @@ class Database():
     # Not required for milestone1
     def open(self, root_path):
         self.bufferpool = Bufferpool(root_path)
+        # print(os.listdir(root_path))
         # check to see if root path exists
         if os.path.isdir(root_path):
             """
@@ -30,12 +32,15 @@ class Database():
             If the path does not exist or is not a directory, os.path.isdir() returns False.
             """
             self.root = root_path  # set root name to the path
-            with os.scandir(root_path) as entries:  # iterate over the entries in a directory
-                for entry in entries:
-                    file_path = f"{root_path}/table_directory.pkl"  # access file path
-                    if entry.path == file_path:
-                        with open(file_path, "rb") as pkl_file:
-                            self.table_directory = pickle.load(pkl_file)
+            for entry in os.scandir(root_path):
+                # print(entry.path)
+                file_path = f"{root_path}/table_directory.pkl"  # access file path
+                # print(file_path)
+                if entry.path == file_path:
+                    with open(file_path, "rb") as pkl_file:
+                        self.table_directory = pickle.load(pkl_file)
+            # print("opened successfully")
+            self.fill_table()
             """
             os.scandir() is a function provided by the os module in Python, introduced in Python 3.5. 
             It is used for efficiently iterating over the contents of a directory.
@@ -47,12 +52,18 @@ class Database():
            DirEntry Object:
            Each DirEntry object contains information about a specific directory entry, including its name and attributes.
             """
-                 # self.fill_table()
 
         else:
             os.mkdir(root_path)
             self.root = root_path
+            # print("opened successfully")
 
+    '''
+    ensures that the database is properly closed, 
+    metadata is saved, 
+    changes are flushed to disk, 
+    and any memories are released
+    '''
     def close(self):
         table_file_dir = open(f"{self.root}/table_directory.pkl", "wb")  # get directory to table files
         pickle.dump(self.table_directory, table_file_dir)  # write table directory to table_file_dir in binary
@@ -74,7 +85,6 @@ class Database():
 
         self.bufferpool.commit_frames()  # commits frames and writes dirty pages to disk
 
-        # print("closed successfully")
         return True
 
     """
@@ -84,30 +94,33 @@ class Database():
     :param key: int             #Index of table key in columns
     """
     def create_table(self, name, num_columns, key_index):
+
         table_path = f"{self.root}/{name}"  # write name of path for the table
+        # print(table_path)
         if os.path.isdir(table_path):  # if table_path exists in directory
             raise Exception(f"Table name, {name}, already exists.")
         else:
             os.mkdir(table_path)  # make the directory
-        
+
         # If no table with the same name exists, proceed to create a new table
         table = Table(name, num_columns, key_index, table_path, self.bufferpool)  # Create a new Table object
-        table.index.create_index(0)  # get index of table (should exist in primary column)
+        table.index.create_index(0)
         self.tables[name] = table
+        # print(self.tables)
         # self.tables.append(table)  # Add the newly created table to the list of tables in the database
 
         # add to table directory
         self.table_directory[name] = {
             "name": name,
-            "table_path_name": table_path,
+            "table_path": table_path,
             "num_columns": num_columns,
             "key": key_index
         }
-        
-        # Return the newly created table object
+        # print(self.table_directory)
+        # print(self.tables)
         return table
 
-    
+
     """
     populates a table object with data from disk
     """
@@ -115,10 +128,9 @@ class Database():
     def fill_table(self):
         for table_name in self.table_directory:
             table_path = self.table_directory[table_name].get("table_path")
-            num_columns = self.table_directory[table_name].get("num_columns")
+            num_columns = self.table_directory[table_name].get("num_cols")
             table_key = self.table_directory[table_name].get("key")
-            placeholder = Table(name=table_name, num_columns=num_columns, key=table_key, path=table_path,
-                            bufferpool=self.bufferpool, is_new=False)
+            placeholder = Table(table_name, num_columns, table_key, table_path, self.bufferpool)
             path2page_dir = f"{table_path}/page_directory.pkl"
             with open(path2page_dir, "rb") as page_dir:
                 placeholder.page_dir = pickle.load(page_dir)
@@ -132,6 +144,7 @@ class Database():
             with open(indices_path, "rb") as stored_index:
                 placeholder.index = pickle.load(stored_index)
             self.tables[table_name] = placeholder
+            # print(self.tables[table_name])
 
     """
     # Deletes the specified table
@@ -139,21 +152,22 @@ class Database():
     def drop_table(self, name):
         if name in self.table_directory:  # check if table name in directory
             table_dir_path = self.table_directory[name]["table_path"]  # get the table directory path
-            print(table_dir_path)
-            print(os.path.exists(table_dir_path))
+            # print(table_dir_path)
+            # print(os.path.exists(table_dir_path))
             if os.path.isdir(table_dir_path):  # if directory exists
                 shutil.rmtree(table_dir_path)  # delete the directory
                 del self.table_directory[name]  # delete table name from directory
                 del self.tables[name]  # delete table name from table dictionary
-                # print("dropped successfully")
+                print("dropped successfully")
                 return True
 
         # print("Unable to drop table")
+        # print(self.table_directory)
         return False
 
     """
     # Returns table with the passed name
     """
     def get_table(self, name):
-        # print(f'tables = {self.tables}')
+        print(f'tables = {self.tables}')
         return self.tables[name]
