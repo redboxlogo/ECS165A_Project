@@ -140,6 +140,7 @@ class PageRange:
             tail_names.append(f"Tail_data_column {i + 1}")
         
         self.tail_page = [[Page(name) for name in tail_names] for _ in range(PAGE_RANGE_SIZE)]
+        return None
 
 
 
@@ -224,8 +225,17 @@ class PageRange:
         newRecord.keyLocStart, newRecord.keyLocEnd = self.insert_long(newRecord.key, tailPage[KEY_COLUMN])      # insert key into key column page
         # newRecord.schema_encodingLocStart, newRecord.schema_encodingLocEnd =self.insert_schema(newRecord.schema_encoding, tailPage[SCHEMA_ENCODING_COLUMN])      # insert schema into schema column page)
         
-        for i in range(self.num_columns-1):
-            tailPage[KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
+        for i in range(1,self.num_columns-1):
+            if(i == 0):
+                continue
+            # print(baseRecord.columnsLoc[i-1])
+            # print(newRecord.columns[i])
+            elementIndex = tailPage[KEY_COLUMN+i].fill_bytearray_by_index(baseRecord.columnsLoc[i-1], (baseRecord.columnsLoc[i]+1), newRecord.columns[i])
+            newRecord.columnsLoc.append(elementIndex)
+
+        
+
+
 
         # oldTailRID = baseRecord.indirection
         # baseRecord.indirection = newRecord.rid

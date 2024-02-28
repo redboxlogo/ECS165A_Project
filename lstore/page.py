@@ -32,8 +32,11 @@ class Page:
         endIndex = end
 
         for i in range(start, end):
+            # print(i)
             self.data[i] = new_value
 
+        self.nextDataBlock = end
+        self.num_records += 1
         return None
 
     def read_bytearray(self,recordObj):                                    # read data inside page bytearray()
@@ -133,8 +136,11 @@ class Page:
 
             # Store the nibble in the byte array
             nibble_array[i // 2] = nibble
+            # print(int((i/2)+1))
+        
 
-        self.nextDataBlock = int((i/2)+1)
+        self.nextDataBlock = int((len(number_str)/2)+1)
+        
         self.num_records += 1
 
 

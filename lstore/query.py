@@ -137,32 +137,44 @@ class Query:
         records_list = []  # initialize list of Record objects to return
         data_list = []  # initialize list 
 
-        current_bpage = self.table.getBasePage(search_key)  # gets current, most updated base page
-        current_bRec = self.table.index.lookup(search_key)  # gets current, most updated base page
-        currRange = self.table.page_range[current_bRec.page_range_indexNUM]
+        current_page = self.table.getBasePage(search_key)  # gets current, most updated base page
+        current_Rec = self.table.index.lookup(search_key)  # gets current, most updated base page
+        currRange = self.table.page_range[current_Rec.page_range_indexNUM]
         first_column = projected_columns_index.pop(0)  # first column value (0 or 1)
+
+        if(current_Rec.indirection != None):
+            # print(current_bRec.indirection)
+            # print(current_Rec)
+            current_Rec = self.table.index.lookup_tail(current_Rec.indirection)
+            # print(current_Rec)
+            current_page = self.table.page_range[current_Rec.page_range_indexNUM].tail_page[current_Rec.base_page_indexNUM]
+            current_Rec.columns.pop(0)
+            
+
 
         # if 0, append nothing; if 1, we return the key of the record metadata
         if first_column == 0:
             data_list.append(None)
         else:
-            data_list.append(current_bRec.key)
+            data_list.append(current_Rec.key)
 
-
+        # print(projected_columns_index)
 
         for i in range(len(projected_columns_index)):  # loop through the data
             # print(projected_columns_index[i])
             if projected_columns_index[i] == 1:
-                # print(current_bpage[0].directoryID)
-                data_list.append(current_bpage[KEY_COLUMN+i+1].read_byte_by_index(current_bRec, i+1))
-                # print(current_bRec.columnsLoc[i])
-                # current_bRec.columnsLoc[KEY_COLUMN+i-1]
-            #     data_list.append(byte_info[i])  # if value is 1, then we append the byt info at given index 
+
+                # print(current_page[KEY_COLUMN+i+1].directoryID)
+                # print(current_Rec.columnsLoc[i])
+                # print(current_page[KEY_COLUMN+i+1].data[current_Rec.columnsLoc[i]])
+                # data_list.append(current_page[KEY_COLUMN+i+1].data[current_Rec.columnsLoc[i]])                      ################################## should read from page
+                data_list.append(current_Rec.columns[i])
             else:
                 data_list.append(None)  # otherwise, we append None
 
-        # current_record_metadata.columns = data_list # puts everything from data_list into the columns of the record
-        records_list.append(data_list)  # append record metadata and return
+        # print(data_list)
+        current_Rec.columns = data_list # puts everything from data_list into the columns of the record
+        records_list.append(current_Rec)  # append record metadata and return
         # logger.info("selecting Record with key: {}".format(current_record_metadata.key))
         return records_list
     
@@ -274,7 +286,7 @@ class Query:
 
         for i in indices_not_none:
 
-            newTail.columns[i-1] = updateColumns[i]
+            newTail.columns[i] = updateColumns[i]
             newTail.schema_encoding = newTail.flip_bit(newTail.schema_encoding, i-1)
 
 

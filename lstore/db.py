@@ -96,13 +96,14 @@ class Database:
 
         table_path = f"{self.root}/{name}"  # write name of path for the table
         if os.path.isdir(table_path):  # if table_path exists in directory
-            raise Exception(f"Table name, {name}, already exists.")
+            print(f"Table name, {name}, already exists.")
+
         else:
             os.mkdir(table_path)  # make the directory
 
         # If no table with the same name exists, proceed to create a new table
         table = Table(name, num_columns, key_index, table_path, self.bufferpool)  # Create a new Table object
-        table.index.create_index(0)
+        # table.index.create_index(0)
         self.tables[name] = table
         # print(self.tables)
         # self.tables.append(table)  # Add the newly created table to the list of tables in the database
