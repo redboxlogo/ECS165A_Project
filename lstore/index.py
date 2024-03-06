@@ -87,27 +87,16 @@ class Index:
     def create_index(self, column_number):
         if column_number not in self.indices:
             # If no index exists, initialize a new index for the column
-            self.indices[column_number] = {}  # You can use any appropriate data structure like a dictionary or a B-Tree
-            
-            # Iterate over each record in the table to populate the index
-            for record in self.table.records:  # Accessing table object
-                # Get the value of the specified column using read_byte_by_index function
+            self.indices[column_number] = {}  
+            for record in self.table.records:  # Accessing table object 
                 value = self.read_byte_by_index(record, column_number)
-                #self.indices[column_number][record.record_id] = record---------------->
-
-                # Check if the value is already in the index
-                if value in self.indices[column_number]:
-                    # If the value already exists, append the record's position to the list of positions
+                if value in self.indices[column_number]: 
                     self.indices[column_number][value].append(record.position)
                 else:
-                    # If the value does not exist, create a new list with the record's position
-                    self.indices[column_number][value] = [record.position]
-                    
+                    self.indices[column_number][value] = [record.position]        
             return True
-        else:
-            # If an index already exists for the column, return False to indicate that index creation failed
+        else:  
             return False
-
     """
     #  Drop index of specific column
     """
