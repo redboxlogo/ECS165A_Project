@@ -8,6 +8,14 @@ class Transaction:
     """
     def __init__(self):
         self.queries = []
+        self.name = None  # name of query function
+        self.fun = None  # query function
+        self.timestamp = datetime.now()  # timestamp
+        self.key = None  # key
+        self.column = None  # column
+        self.columns = None
+        self.start_loc = None
+        self.end_loc = None
         pass
 
     """
