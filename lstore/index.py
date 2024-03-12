@@ -111,6 +111,23 @@ class Index:
             # If an index already exists for the column, return False to indicate that index creation failed
             return False
 
+    def create_index(self, table):
+        for column_number in range(table.get_column_count()):
+            
+            if column_number not in table.indices:
+                table.indices[column_number] = {}
+                
+                for record in table.records:
+                    value = self.read_byte_by_index(record, column_number)
+                    
+                    if value in table.indices[column_number]:
+                        
+                        table.indices[column_number][value].append(record.position)
+                        
+                    else:
+                        table.indices[column_number][value] = [record.position]
+
+
     """
     #  Drop index of specific column
     """
