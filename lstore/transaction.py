@@ -22,7 +22,7 @@ class Transaction:
     # t = Transaction()
     # t.add_query(q.update, grades_table, 0, *[None, 1, None, 2, None])
     """
-    def add_query(self, query, table, *args)::
+    def add_query(self, query, table, *args):
         if self.table is None:
             query_member = getmembers(query, lambda member: isinstance(member, Query))[0][1]
             '''
