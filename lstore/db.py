@@ -171,3 +171,12 @@ class Database:
     def get_table(self, name):
         print(f'tables = {self.tables}')
         return self.tables[name]
+
+    def get_table(self, name):
+        if table_name not in self.tables:
+            self.tables[name] = Table()
+            self.create_index(self.tables[name])
+            self.tables[name].indices_created = True  # Set indicator to True
+            print(f'tables = {self.tables}')
+            
+        return self.tables[name]
