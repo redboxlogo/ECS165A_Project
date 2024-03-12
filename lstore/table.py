@@ -279,8 +279,76 @@ class Table:
         self.table_path = path
         
 
-    def __merge(self):
+    def __merge(self, mergeQ):
         print("merge is happening")
+        
+        # while true do:    
+        # Step1     
+        # wait until the concurrent merge queue is not empty    
+        #     if mergeQ is not empty then   
+
+
+        #         Step2   
+        #         fetch references to a set of committed tail pages      
+        #         batchTailPage <- mergeQ.dequeue()     
+        #         create a copy of corresponding base pages       
+        #         batchConsPage←batchTailPage.getBasePageCopy()
+        #         decompress(batchConsPage)
+        #         trackifithasseenthelatestupdateofeveryrecord
+
+        #         HashMapseenUpdatesH
+        #         readingasetoftailpagesinreverseorder
+                
+        #         Step3
+                
+        #         for i=0; i<batchTailPage.size; i←i+1 do
+                
+        #             tailPage←batchTailPages[i]
+                    
+        #                 forj=k−1;j≥tailPage.size;j←j−1 do
+                        
+        #                 record[j]←jth recordinthetailPage
+                        
+        #                 RID←record[j].RID
+                        
+        #                 ifseenUpdatesHdoesnotcontainRIDthen
+                            
+        #                     seenUpdatesH.add(RID)
+                            
+        #                     copy the latest version of record into consolidated pages
+                            
+        #                     batchConsPage.update(RID,record[j])
+                            
+        #                 end
+                        
+        #                 ififallRIDsORalltailpagesareseenthen
+                            
+        #                     compress(batchConsPage)
+                            
+        #                     persist(batchConsPage)
+                            
+        #                     stopexaminingremainingtailpages
+                            
+        #                 end
+                
+        #             end
+                
+        #         end
+
+        #         Step4
+                
+        #         fetch references to the corresponding base pages
+
+        #         batchBasePage batchTailPage.getBasePageRef()
+        #         update page directory to point to the consolidated base pages
+        #         PageDirect.swap(batchBasePage,batchConsPage)
+                
+        #         Step5
+
+        #         queueoutdatedpagesfordeallocationoncereaderspriormergearedrained
+        #         deallocateQ.enqueue(batchBasePage)
+        #     end
+        # end
         pass
 
     def newPageRange(self):
