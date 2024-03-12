@@ -8,14 +8,11 @@ class Transaction:
     """
     def __init__(self):
         self.queries = []
-        self.name = None  # name of query function
-        self.fun = None  # query function
-        self.timestamp = datetime.now()  # timestamp
-        self.key = None  # key
-        self.column = None  # column
-        self.columns = None
-        self.start_loc = None
-        self.end_loc = None
+        self.table = None
+        self.lock_manager = None
+        self.abort = False
+        self.locked_keys # maps primary keys to lock type
+        self.locks = []
         pass
 
     """
@@ -26,8 +23,16 @@ class Transaction:
     # t.add_query(q.update, grades_table, 0, *[None, 1, None, 2, None])
     """
     def add_query(self, query, table, *args):
+            def add_query(self, query, table, *args):
+        if self.table is None:
+            query_member = getmembers(query, lambda member: isinstance(member, Query))[0][1]
+            '''
+            getmembers() returns the member functions present in the module passed as an argument of this method
+            '''
+            self.table = query_member.table  # dumps the table data for the query object in table
         self.queries.append((query, args))
         # use grades_table for aborting
+        return
 
         
     # If you choose to implement this differently this method must still return True if transaction commits or False on abort
