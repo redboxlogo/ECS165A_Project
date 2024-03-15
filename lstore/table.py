@@ -244,6 +244,7 @@ class PageRange:
         return startIndex, endIndex
 
     def insert_RID(self, RID:hex , page:Page):
+        page.num_records += 1
         startIndex, endIndex = page.store_hex_in_bytearray(RID)
         return startIndex, endIndex
     
