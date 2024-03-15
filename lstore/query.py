@@ -108,6 +108,7 @@ class Query:
 
             for i in range(self.table.num_columns-1):
                 elementIndex = recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
+                recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].num_records = recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].num_records + 1
                 newRecord.columnsLoc.append(elementIndex)
             # return self.table.index.insert_newrec(newRecord)
 
@@ -213,11 +214,9 @@ class Query:
 
         updateColumns = list(columns)
         baseRecordObj = self.table.index.lookup(primary_key)
-        # print(baseRecordObj.base_page_indexNUM)
         currRange = self.table.page_range[baseRecordObj.page_range_indexNUM]
         fullTailRange = currRange.tail_page[baseRecordObj.base_page_indexNUM]
         currTailPage = fullTailRange[:(self.table.num_columns+4)]
-        # currTailPageIndex = (self.table.num_columns+4)
 
 
         # check capacity of tail page
@@ -256,6 +255,7 @@ class Query:
                 tail_names.append(f"Tail_data_column {i + 1}")
             currTailPage = [Page(name) for name in tail_names]
             currRange.tail_page[baseRecordObj.page_range_indexNUM].extend(currTailPage)
+            currRange.num_tail_pages = currRange.num_tail_pages + 1
 
 
         # print(self.table.index.lookup_tail(baseRecordObj.indirection).key)
