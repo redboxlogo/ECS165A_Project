@@ -24,9 +24,15 @@ class TransactionWorker:
     Runs all transactions as a thread.
     """
     def run(self):
-        # Create a thread that targets the __run method.
-        self.thread = threading.Thread(target=self.__run)
-        self.thread.start()
+        threads = []
+        for transaction in self.transactions:
+            thread = threading.Thread(target=self.__run, args=(transaction,))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+            # here you need to create a thread and call __run
+    
 
     """
     Waits for the worker to finish.
