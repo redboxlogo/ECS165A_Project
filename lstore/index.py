@@ -9,7 +9,7 @@ class Index:
     def __init__(self, table):#(self, table,root_path)
         self.table = table  # Storing the table object for later use
         # One index for each table. All our empty initially.
-        self.indices = {}
+        self.indices = [None] * table.num_columns
         self.rid_to_tail_records = {} 
         #self.root_path = root_path
         return None
@@ -76,7 +76,7 @@ class Index:
     def locate_range(self, begin, end, column):
         if column in self.indices:
             column_index = self.indices[column]
-            records_within_range = []
+            records_within_range = {}
             for value in range(begin, end + 1):
                 if value in column_index:
                     records_within_range.append(column_index[value])
@@ -92,19 +92,19 @@ class Index:
             # If no index exists, initialize a new index for the column
             self.indices[column_number] = {}  # You can use any appropriate data structure like a dictionary or a B-Tree
             
-            # Iterate over each record in the table to populate the index
-            for record in self.table.records:  # Accessing table object
-                # Get the value of the specified column using read_byte_by_index function
-                value = self.read_byte_by_index(record, column_number)
-                #self.indices[column_number][record.record_id] = record---------------->
+            # # Iterate over each record in the table to populate the index
+            # for record in self.table.records:  # Accessing table object
+            #     # Get the value of the specified column using read_byte_by_index function
+            #     value = self.read_byte_by_index(record, column_number)
+            #     #self.indices[column_number][record.record_id] = record---------------->
 
-                # Check if the value is already in the index
-                if value in self.indices[column_number]:
-                    # If the value already exists, append the record's position to the list of positions
-                    self.indices[column_number][value].append(record.position)
-                else:
-                    # If the value does not exist, create a new list with the record's position
-                    self.indices[column_number][value] = [record.position]
+            #     # Check if the value is already in the index
+            #     if value in self.indices[column_number]:
+            #         # If the value already exists, append the record's position to the list of positions
+            #         self.indices[column_number][value].append(record.position)
+            #     else:
+            #         # If the value does not exist, create a new list with the record's position
+            #         self.indices[column_number][value] = [record.position]
                     
             return True
         else:

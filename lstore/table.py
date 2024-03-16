@@ -1,13 +1,13 @@
 import pickle
 import threading
-from index import Index
-from page import Page
-from locks import ReadWriteLock
+from lstore.index import Index
+from lstore.page import Page
+from lstore.locks import ReadWriteLock
 from time import time
 from uuid import uuid4
-from logger import logger
+from lstore.logger import logger
 from collections import defaultdict
-from config import *
+from lstore.config import *
 import copy
 
 
