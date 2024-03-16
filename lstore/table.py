@@ -3,27 +3,21 @@ from lstore.page import Page
 from time import time
 from uuid import uuid4
 from lstore.logger import logger
-import threading
-import pickle
+from lstore.config import *
 
-INDIRECTION_COLUMN = 0
-RID_COLUMN = 1
-TIMESTAMP_COLUMN = 2
-SCHEMA_ENCODING_COLUMN = 3
-
-
-PAGE_RANGE_SIZE = 8
 
 class Record:
 
     def __init__(self, rid, schema_encoding, key, columns):     # default constructor for Record() obj
         self.rid = rid                                          # rid for identification
+        self.ridLocStart = None
+        self.ridLocEnd = None
         
         self.indirection = None                                 # pointer used to point to tail (if in Base page) or prior update (if in Tail page)
         self.indirectionLocStart = None
         self.indirectionLocEnd = None
 
-        self.startTime = time()                                 # record creation time 
+        self.startTime = int(time())                                 # record creation time 
         self.startTimeLocStart = None
         self.startTimeLocEnd = None
         
@@ -109,9 +103,6 @@ class Record:
     def getEnd(self):                                                                       # get the end location for record data in base page            
         return self.pageLocEnd                                                              # return the end index of the record data in base page
 
-    def keyCompression(self, keyInt):
-        pass
-
 
 class PageRange:
     """
@@ -125,27 +116,50 @@ class PageRange:
         self.key = pr_key
         self.num_tail_pages = 0
         self.num_tail_records = 0
-
         # Default page names
         default_names = ["INDIRECTION","RID", "TIME", "SCHEMA", "KEY"]
-
         # Generate additional page names
         for i in range(num_columns - 1):
             default_names.append(f"data_column {i + 1}")
-        self.base_page = [[Page(name) for name in default_names] * PAGE_RANGE_SIZE]
+        self.base_page = [[Page(name) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
 
-    def set_page(self, row, col, page_obj):
-        if 0 <= row < self.size and 0 <= col < self.size:
-            self.page_lists[row][col] = page_obj
+    def capacity_check(self):
+        if(self.base_page[-1][RID_COLUMN].num_records == 256):
+            return False
         else:
-            print("Invalid row or column index.")
+            return True
+        
+    def insert_colElement(self,colData:int, page:Page):
+        ElementIndex, nextByte = page.fill_bytearray(colData)
+        return ElementIndex
 
-    def get_page(self, row, col):
-        if 0 <= row < self.size and 0 <= col < self.size:
-            return self.page_lists[row][col]
-        else:
-            print("Invalid row or column index.")
-            return None
+    # function to insert information larger than a single byte
+    def insert_long(self, primary_key:int , page:Page):
+        startIndex, endIndex = page.parse_integer_to_nibbles(primary_key)
+        return startIndex, endIndex
+
+    def insert_RID(self, RID:hex , page:Page):
+        startIndex, endIndex = page.store_hex_in_bytearray(RID)
+        return startIndex, endIndex
+    
+    def insert_schema(self, schema:str, page:Page):
+        
+        numCols = len(schema)
+
+        # Convert the series of zeros to binary
+        binary_representation = int(schema, 2)
+
+        # Calculate the number of bytes needed
+        num_bytes = (numCols + 7) // 8
+
+        startIndex, endIndex = page.space_allocation(num_bytes)
+
+        # # Convert to bytes
+        # byte_value = binary_representation.to_bytes(num_bytes, byteorder='big')
+
+
+        return startIndex, endIndex
+
 
     
 # Each Table should have both Base and Tail pages 
@@ -157,8 +171,7 @@ class Table:
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-
-    def __init__(self, name, num_columns, key, path=None, bufferpool=None):
+        def __init__(self, name, num_columns, key, path=None, bufferpool=None):
         self.name = name  # set name of table
         self.table_path = path
         self.key = key  # set table key
@@ -173,22 +186,26 @@ class Table:
         self.num_brecords = 0
         self.num_trecords = 0
         self.page_directory = {}  # dictionary given a record key, it should return the page address/location
-        self.num_pranges = 0
-        self.prange_data = {}
-        self.prange = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
+        self.num_page_ranges = 0
+        self.page_range_data = {}
+        self.page_range = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
         self.base_page = []  # list of Base page objects
         self.tail_page = []  # list of Tail page objects
         self.index = Index(self)
         self.record_lock = threading.Lock()
         self.bufferpool = bufferpool
         self.table_path = path
-
-        return None
         
 
     def __merge(self):
         print("merge is happening")
         pass
+
+    def newPageRange(self):
+        mostRecent = self.page_ranges[-1]
+        newRange = PageRange(num_columns=mostRecent.num_columns, parent_key=mostRecent.table_key, pr_key=(mostRecent.key+1))
+        self.page_ranges.append(newRange)
+        return newRange
     
     # helper function to set Base record after insert retaining read-only properties of base page
     def setBase(self, basePage, insertRecord):
@@ -267,12 +284,12 @@ class Table:
             "key": self.key,
             "table_path": self.table_path,
             "num_columns": self.num_columns,
-            "column_names": self.col_names,
+            "col_names": self.col_names,
             "num_records": self.num_records,
-            "num_base_records": self.num_brecords,
-            "num_tail_records": self.num_trecords,
-            "num_page_ranges": self.num_pranges,
-            "page_range_data": self.prange_data,
+            "num_brecords": self.num_brecords,
+            "num_trecords": self.num_trecords,
+            "num_page_ranges": self.num_page_ranges,
+            "page_range_data": self.page_range_data,
         }
         self.page_directory["table_data"] = table_data
 
@@ -286,16 +303,14 @@ class Table:
         self.num_records = table_data["num_records"]
         self.num_brecords = table_data["num_base_records"]
         self.num_trecords = table_data["num_tail_records"]
-        self.num_pranges = table_data["num_page_ranges"]
-        self.prange_data = table_data["page_range_data"]
+        self.num_page_ranges = table_data["num_page_ranges"]
+        self.page_range_data = table_data["page_range_data"]
 
+    # writes table directory to disk
     def table_page_dir_to_disk(self):
-        """
-        Function that writes the Table's page_directory to disk
-        """
-        self.stores_table_data()
-        page_dir_file = open(f"{self.table_path}/page_directory.pkl", "wb")
-        pickle.dump(self.page_directory, page_dir_file)
-        page_dir_file.close()
-
-
+        self.stores_table_data()  # load all the table data
+        page_dir = open(f"{self.table_path}/page_directory.pkl", "wb")  # open directory path
+        pickle.dump(self.page_directory, page_dir)  # load data into page_directory
+        page_dir.close()  # close the directory
+        
+        return True

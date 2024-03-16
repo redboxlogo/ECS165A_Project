@@ -2,7 +2,7 @@ from lstore.db import Database
 from lstore.query import Query
 from time import time
 from random import choice, randrange, seed
-
+from lstore.config import *
 
 # Student Id and 4 grades
 db = Database()                                                             # create database object from db.py
@@ -29,7 +29,7 @@ insertFlag = True
 if(insertFlag == True):
     insert_time_0 = time()                                              #get time
     print(insert_time_0)
-    for i in range(0, 1000000):                                                   #for loop for query inserts and key appends
+    for i in range(0, 10000):                                                   #for loop for query inserts and key appends
         query.insert(906659671 + i, 93, 0, 0, 0)                                #call insert(self, *columns) from query
         keys.append(906659671 + i)                                              #call append() from key
     insert_time_1 = time()                                              #get time
@@ -37,7 +37,7 @@ if(insertFlag == True):
     # print(insert_time_1 - insert_time_0)
     print("Inserting 1M records took:  \t\t\t", insert_time_1 - insert_time_0) #print
 
-
+print(query.table.index.lookup(906659673))
 
 ################################################################################################################################
 
