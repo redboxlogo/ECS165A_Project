@@ -26,7 +26,7 @@ class TransactionWorker:
     def run(self):
         threads = []
         for transaction in self.transactions:
-            thread = threading.Thread(target=self.__run, args=(transaction,))
+            thread = threading.Thread(target=self.__run)#, args=(transaction,))
             threads.append(thread)
             thread.start()
         for thread in threads:

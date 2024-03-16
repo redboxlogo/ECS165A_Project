@@ -58,6 +58,7 @@ for i in range(number_of_transactions):
 # run transaction workers
 for i in range(num_threads):
     transaction_workers[i].run()
+    # print(dir(transaction_workers[i].transactions))
 
 # wait for workers to finish
 for i in range(num_threads):
