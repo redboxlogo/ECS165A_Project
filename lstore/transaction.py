@@ -5,23 +5,16 @@ from lstore.query import Query
 import datetime
 
 class Transaction:
-
     """
     # Creates a transaction object.
     """
+
     def __init__(self):
         self.queries = []
-        self.name = None  # name of query function
-        self.fun = None  # query function
-        self.timestamp = datetime.now()  # timestamp
-        self.key = None  # key
-        self.column = None  # column
-        self.columns = None
-        self.start_loc = None
-        self.end_loc = None
-        self.locks = {}
-        self.read_write_lock = ReadWriteLock
-        pass
+        self.table = None
+        self.s_locks = set()
+        self.x_locks = set()
+        self.insert_locks = set()
 
     """
     # Adds the given query to this transaction
@@ -32,24 +25,23 @@ class Transaction:
     """
 
     def add_query(self, query, table, *args):
-        if self.table is None:
-           # query_member = getmembers(query, lambda member: isinstance(member, Query))[0][1]
-            '''
-            getmembers() returns the member functions present in the module passed as an argument of this method
-            '''
-            self.table = query_member.table  # dumps the table data for the query object in table
         self.queries.append((query, args))
-        # use grades_table for aborting
-        return
+        if self.table == None:
+            self.table = table
 
-        
     # If you choose to implement this differently this method must still return True if transaction commits or False on abort
     def run(self):
         for query, args in self.queries:
-            result = query(*args)
-            # If the query has failed the transaction should abort
-            if result == False:
-                return self.abort()
+            key = args[0]
+            if key not in self.table.lock_manager:
+                self.insert_locks.add(key)
+                self.table.lock_manager[key] = ReadWriteLock()
+            if key not in self.x_locks and key not in self.insert_locks:
+                if self.table.lock_manager[key].get_exclusive_lock():
+                    self.x_locks.add(key)
+                else:
+                    return self.abort()
+
         return self.commit()
 
     
