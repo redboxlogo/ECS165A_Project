@@ -4,6 +4,7 @@ from lstore.locks import ReadWriteLock
 from lstore.query import Query
 import datetime
 
+
 class Transaction:
     """
     # Creates a transaction object.
@@ -32,7 +33,7 @@ class Transaction:
     # If you choose to implement this differently this method must still return True if transaction commits or False on abort
     def run(self):
         for query, args in self.queries:
-            key = args[0]
+            key = args[0]  # get the key for args
             if key not in self.table.lock_manager:
                 self.insert_locks.add(key)
                 self.table.lock_manager[key] = ReadWriteLock()
@@ -44,31 +45,34 @@ class Transaction:
 
         return self.commit()
 
-    
     def abort(self):
-        # Roll back changes by restoring the original state of all affected records
-        for record_id, original_record in self.original_states.items():
-            # Assuming Table class has a method to update records by ID
-            Table.update_record_by_id(record_id, original_record)
-        print("Transaction aborted and changes rolled back.")
+        # initiate roll back for all changes
+        # restore to consistent state
+        for key in self.s_locks:
+            self.table.lock_manager[key].release_shared_lock()
+        for key in self.x_locks:
+            self.table.lock_manager[key].release_exclusive_lock()
+        for key in self.insert_locks:
+            del self.table.lock_manager[key]
         return False
 
-    
     def commit(self):
-        # Commit changes made during the transaction
-        try:
-            for rid, lock_type in self.locks.items():
-                if lock_type == 'read':
-                    # Release reader lock for the given record identifier
-                    self.read_write_lock.release_shared_lock(rid)
-                elif lock_type == 'write':
-                    # Release writer lock for the given record identifier
-                    self.read_write_lock.release_exclusive_lock(rid)
-            print("Transaction committed successfully.")
-            return True
-        except Exception as e:
-            # Handle exceptions during commit
-            print(f"Error during commit: {e}")
-            return False
+        # commit changes in transaction
+        for query, args in self.queries:
+            query(*args)
+            # remove lock from lock manager directory after deleting a record
+            if query == Query.delete:
+                del self.table.lock_manager[key]
+                if key in self.x_locks:
+                    self.insert_locks.remove(key)
+                if key in self.insert_locks:
+                    self.insert_locks.remove(key)
 
-        
+        for key in self.s_locks:
+            self.table.lock_manager[key].release_shared_lock()
+        for key in self.x_locks:
+            self.table.lock_manager[key].release_exclusive_lock()
+        for key in self.insert_locks:
+            self.table.lock_manager[key].release_exclusive_lock()
+        return True
+
