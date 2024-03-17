@@ -49,12 +49,11 @@ class Index:
             # If the key doesn't exist, create an index for it
             return self.create_index(key)'''
         # Add the record to the index for the specified key
-<<<<<<< Updated upstream
-        self.indices[key] = record
+        if self.indices[1] == None:
+            self.indices[1] = {}
+        self.indices[1][key] = key
+
         self.key_to_base_records[key] = record
-=======
-        self.indices[1] = key
->>>>>>> Stashed changes
         return True  # Successfully inserted the record
 
     def insert_tailrec(self, record):
@@ -73,9 +72,9 @@ class Index:
 
     def lookup(self, key):
         # Check if the key exists in the indices dictionary
-        if key in self.indices:
+        if key in self.indices[1]:
             # Return the record associated with the key
-            return self.indices[key]
+            return self.key_to_base_records[key]
         return None  # Key not found in the index
     
     def locate_range(self, begin, end, column):
