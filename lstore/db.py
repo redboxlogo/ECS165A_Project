@@ -140,7 +140,7 @@ class Database:
     def fill_table(self):
         for table_name in self.table_directory:
             table_path = self.table_directory[table_name].get("table_path")
-            num_columns = self.table_directory[table_name].get("num_cols")
+            num_columns = self.table_directory[table_name].get("num_columns")  # Corrected typo here
             table_key = self.table_directory[table_name].get("key")
             placeholder = Table(table_name, num_columns, table_key, table_path, self.bufferpool)
             path2page_dir = f"{table_path}/page_directory.pkl"
@@ -156,7 +156,6 @@ class Database:
             with open(indices_path, "rb") as stored_index:
                 placeholder.index = pickle.load(stored_index)
             self.tables[table_name] = placeholder
-            # print(self.tables[table_name])
 
     """
     # Deletes the specified table
