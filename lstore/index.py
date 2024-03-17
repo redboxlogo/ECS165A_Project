@@ -10,6 +10,7 @@ class Index:
         self.table = table  # Storing the table object for later use
         # One index for each table. All our empty initially.
         self.indices = [None] * table.num_columns
+        self.key_to_base_records = {}
         self.rid_to_tail_records = {} 
         #self.root_path = root_path
         return None
@@ -48,7 +49,12 @@ class Index:
             # If the key doesn't exist, create an index for it
             return self.create_index(key)'''
         # Add the record to the index for the specified key
+<<<<<<< Updated upstream
         self.indices[key] = record
+        self.key_to_base_records[key] = record
+=======
+        self.indices[1] = key
+>>>>>>> Stashed changes
         return True  # Successfully inserted the record
 
     def insert_tailrec(self, record):
