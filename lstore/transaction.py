@@ -1,9 +1,7 @@
-from lstore.table import Table, Record
-from lstore.index import Index
+from lstore.table import Table
 from lstore.locks import ReadWriteLock
 from lstore.query import Query
 import datetime
-
 
 class Transaction:
     """
@@ -12,25 +10,26 @@ class Transaction:
 
     def __init__(self):
         self.queries = []
+        self.operations = []  # Initialize the operations list
         self.table = None
         self.s_locks = set()
         self.x_locks = set()
         self.insert_locks = set()
-
-    """
-    # Adds the given query to this transaction
-    # Example:
-    # q = Query(grades_table)
-    # t = Transaction()
-    # t.add_query(q.update, grades_table, 0, *[None, 1, None, 2, None])
-    """
+        self.original_states = {}  # Initialize a dictionary to keep track of original record states
 
     def add_query(self, query, table, *args):
+        # Store the query and arguments
         self.queries.append((query, args))
-        if self.table == None:
+        # Format the operation as expected by TransactionWorker
+        # Assumes the first argument is the RID for the sake of locking
+        rid = args[0]
+        lock_type = 'write'  # or 'read', depending on the nature of the operation
+        self.operations.append((lock_type, rid, lambda: query(table, *args)))
+        # Set the table for the transaction if it hasn't been set yet
+        if self.table is None:
             self.table = table
 
-    # If you choose to implement this differently this method must still return True if transaction commits or False on abort
+     # If you choose to implement this differently this method must still return True if transaction commits or False on abort
     def run(self):
         for query, args in self.queries:
             key = args[0]  # get the key for args
@@ -75,4 +74,3 @@ class Transaction:
         for key in self.insert_locks:
             self.table.lock_manager[key].release_exclusive_lock()
         return True
-
