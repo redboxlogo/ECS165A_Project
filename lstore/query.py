@@ -107,7 +107,7 @@ class Query:
             newRecord.base_page_indexNUM = basePagesNUM
 
             for i in range(self.table.num_columns-1):
-                elementIndex = recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].fill_bytearray(newRecord.columns[i])
+                elementIndex = recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].parse_integer_to_nibbles(newRecord.columns[i])
                 newRecord.columnsLoc.append(elementIndex)
             # return self.table.index.insert_newrec(newRecord)
 
