@@ -40,8 +40,6 @@ class Record:
         self.page_range_indexNUM = None
         self.base_page_indexNUM = None
 
-        self.lock_manager = defaultdict()
-
     def flip_bit(self, byte_str, bit_position):
         byte_int = int(byte_str, 2)  # Convert binary string to integer
         num_bits = len(byte_str)  # Get the number of bits in the byte
@@ -282,6 +280,7 @@ class Table:
         self.record_lock = threading.Lock()
         self.bufferpool = bufferpool
         self.table_path = path
+        self.lock_manager = defaultdict()
         
 
     def __merge(self):
