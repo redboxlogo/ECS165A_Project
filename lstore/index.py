@@ -14,7 +14,6 @@ class Index:
         #self.root_path = root_path
         return None
 
-
     """
     # returns the location of all records with the given value on column "column"
     """
