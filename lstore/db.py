@@ -9,6 +9,7 @@ import pickle
 class Database:
 
     def __init__(self):
+        self.indices = {}
         self.tables = {}  # stores table data
         self.bufferpool = None  # sets bufferpool
         self.table_directory = {}  # maps table names to table information
@@ -119,6 +120,18 @@ class Database:
         # print(self.tables)
         return table
 
+    def index_create_table(self, name):
+        
+        if name not in self.tables:
+            # If the table doesn't exist, create a new table
+            self.tables[name] = {}  # You can use any appropriate data structure like a dictionary or a list for the table
+            
+            return True
+            
+        else:
+            # If the table already exists, return False to indicate that table creation failed
+            
+            return False
 
     """
     populates a table object with data from disk
@@ -169,5 +182,10 @@ class Database:
     """
     
     def get_table(self, name):
-        print(f'tables = {self.tables}')
-        return self.tables[name]
+        if name in self.tables:
+            # If the table exists, return a copy of the table
+            table_copy = dict(self.tables[name])  # Creating a shallow copy of the table
+            return table_copy
+        else:
+            # If the table doesn't exist, return None
+            return None
