@@ -9,6 +9,7 @@ import pickle
 class Database:
 
     def __init__(self):
+        self.indices = {}
         self.tables = {}  # stores table data
         self.bufferpool = None  # sets bufferpool
         self.table_directory = {}  # maps table names to table information
@@ -63,28 +64,37 @@ class Database:
     changes are flushed to disk, 
     and any memories are released
     '''
+
     def close(self):
-        table_file_dir = open(f"{self.root}/table_directory.pkl", "wb")  # get directory to table files
-        pickle.dump(self.table_directory, table_file_dir)  # write table directory to table_file_dir in binary
-        table_file_dir.close()  # close the file object
+        table_file_dir = open(f"{self.root}/table_directory.pkl", "wb")
+        pickle.dump(self.table_directory, table_file_dir)
+        table_file_dir.close()
 
         for table_data in self.table_directory.values():  # iterate through all table data in directory
             table_name = table_data.get("name")  # get name of table
-            get_table = self.tables[table_name]  # get table info for the name
-            get_table.record_lock = None  # initialize locking
-            closed = get_table.table_page_dir_to_disk()  # closes the table page directory; returns True if closed, False if not
-
+            table = self.tables[table_name]  # get table info for the name
+            
+            # Close and write page directory to disk
+            closed = table.table_page_dir_to_disk()
             if not closed:
-                raise Exception(f"Could not close the page directory: {table_name}")  # raise error if cannot be closed
+                raise Exception(f"Could not close the page directory for table: {table_name}")
+            
+            # Release locks and pickle the index object
+            for index in table.index.indices.values():
+                if isinstance(index, ReadWriteLock):
+                    index.release_all_locks()  
+                elif isinstance(index, dict):  # If index is a dict of locks
+                    for lock in index.values():
+                        if isinstance(lock, ReadWriteLock):
+                            lock.release_all_locks()  # Release all locks
 
-            index_file = open(f"{get_table.table_path}/indices.pkl", "wb")  # save indexes as pkl file
+            index_file = open(f"{table.table_path}/indices.pkl", "wb")
+            pickle.dump(table.index, index_file)
+            index_file.close()
 
-            pickle.dump(get_table.index, index_file)  # load in index data from get_table into index_file
-            index_file.close()  # close the index file
-
-        self.bufferpool.commit_frames()  # commits frames and writes dirty pages to disk
-
+        self.bufferpool.commit_frames()
         return True
+
 
     """
     # Creates a new table
@@ -119,6 +129,18 @@ class Database:
         # print(self.tables)
         return table
 
+    def index_create_table(self, name):
+        
+        if name not in self.tables:
+            # If the table doesn't exist, create a new table
+            self.tables[name] = {}  # You can use any appropriate data structure like a dictionary or a list for the table
+            
+            return True
+            
+        else:
+            # If the table already exists, return False to indicate that table creation failed
+            
+            return False
 
     """
     populates a table object with data from disk
@@ -169,5 +191,10 @@ class Database:
     """
     
     def get_table(self, name):
-        print(f'tables = {self.tables}')
-        return self.tables[name]
+        if name in self.tables:
+            # If the table exists, return a copy of the table
+            table_copy = dict(self.tables[name])  # Creating a shallow copy of the table
+            return table_copy
+        else:
+            # If the table doesn't exist, return None
+            return None
