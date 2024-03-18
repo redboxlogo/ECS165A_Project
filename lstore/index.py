@@ -3,6 +3,7 @@ A data strucutre holding indices for various columns of a table. Key column shou
 """
 import os 
 import pickle
+import threading
 
 class Index:
 
@@ -12,6 +13,7 @@ class Index:
         self.indices = [None] * table.num_columns
         self.key_to_base_records = {}
         self.rid_to_tail_records = {} 
+        self.lock = threading.Lock()
         #self.root_path = root_path
         return None
 
@@ -92,6 +94,7 @@ class Index:
     """
 
     def create_index(self, column_number):
+        # self.lock.acquire()  it takes really long to run when i acquire a lock on create_index
         if column_number not in self.indices:
             # If no index exists, initialize a new index for the column
             self.indices[column_number] = {}  # You can use any appropriate data structure like a dictionary or a B-Tree
@@ -114,6 +117,7 @@ class Index:
         else:
             # If an index already exists for the column, return False to indicate that index creation failed
             return False
+         # self.lock.release()
 
     """
     #  Drop index of specific column
