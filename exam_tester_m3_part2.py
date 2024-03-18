@@ -10,6 +10,11 @@ db.open('./ECS165')
 
 # Getting the existing Grades table
 grades_table = db.get_table('Grades')
+if grades_table:
+    print("Table 'Grades' successfully retrieved.")
+else:
+    print("Failed to retrieve table 'Grades'.")
+
 
 # create a query class for the grades table
 query = Query(grades_table)
