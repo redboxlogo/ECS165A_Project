@@ -70,21 +70,21 @@ class Database:
         pickle.dump(self.table_directory, table_file_dir)
         table_file_dir.close()
 
-        for table_data in self.table_directory.values():  # iterate through all table data in directory
-            table_name = table_data.get("name")  # get name of table
-            table = self.tables[table_name]  # get table info for the name
-            
+        for table_data in self.table_directory.values():
+            table_name = table_data.get("name")
+            table = self.tables[table_name]
+
             # Close and write page directory to disk
             closed = table.table_page_dir_to_disk()
             if not closed:
                 raise Exception(f"Could not close the page directory for table: {table_name}")
-            
+
             # Release locks and pickle the index object
-            for index in table.index.indices.values():
-                if isinstance(index, ReadWriteLock):
-                    index.release_all_locks()  
-                elif isinstance(index, dict):  # If index is a dict of locks
-                    for lock in index.values():
+            for item in table.index.indices:
+                if isinstance(item, ReadWriteLock):
+                    item.release_all_locks()  # Assuming release_all_locks is a method you have
+                elif isinstance(item, dict):  # If the item is a dict of locks
+                    for lock in item.values():
                         if isinstance(lock, ReadWriteLock):
                             lock.release_all_locks()  # Release all locks
 
@@ -94,6 +94,7 @@ class Database:
 
         self.bufferpool.commit_frames()
         return True
+
 
 
     """
