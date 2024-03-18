@@ -107,7 +107,7 @@ class Query:
             newRecord.base_page_indexNUM = basePagesNUM
 
             for i in range(self.table.num_columns-1):
-                elementIndex = recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].parse_integer_to_nibbles(newRecord.columns[i])
+                elementIndex, nextblock = recentRange.base_page[basePagesNUM][KEY_COLUMN+i+1].parse_integer_to_nibbles(newRecord.columns[i])
                 newRecord.columnsLoc.append(elementIndex)
             # return self.table.index.insert_newrec(newRecord)
 
@@ -226,7 +226,7 @@ class Query:
             tail_names = ["Tail_INDIRECTION","Tail_RID", "Tail_TIME", "Tail_SCHEMA", "Tail_KEY"]  # Template for generating page names
             for i in range(self.table.num_columns - 1):
                 tail_names.append(f"Tail_data_column {i + 1}")
-            currTailPage = [Page(name) for name in tail_names]
+            currTailPage = [Page(name, currRange.page_range_path) for name in tail_names]
             currRange.tail_page[baseRecordObj.page_range_indexNUM].extend(currTailPage)
 
 
@@ -315,10 +315,13 @@ class Query:
 
             if basePage is None:
                 print("cant find page")
-                return False
+                sumList.append(0)
+                # return False
+                continue
 
             # Use the getRecord method to access the record
             record = self.table.index.lookup(i) 
+            tailrecord = self.table.index.lookup_tail(record.indirection)
 
 
             if record is None:
@@ -333,7 +336,7 @@ class Query:
             if aggregate_column_index == -1:
                 sumList.append(record.key)
             else:
-                value = basePage[KEY_COLUMN+1+aggregate_column_index].read_byte_by_index(record, (aggregate_column_index+1))
+                value = tailrecord.columns[aggregate_column_index+1]#basePage[KEY_COLUMN+1+aggregate_column_index].read_byte_by_index(record, (aggregate_column_index+1))
                 sumList.append(value)
 
         # After processing the range, check if any valid data was aggregated

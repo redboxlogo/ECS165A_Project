@@ -9,7 +9,9 @@ from lstore.logger import logger
 from collections import defaultdict
 from lstore.config import *
 import copy
-
+import os
+import shutil
+import json
 
 class Record:
 
@@ -125,24 +127,32 @@ class PageRange:
     :param parent_key: int         Integer key of the parent Table
     :param pr_key: int             Integer key of the PageRange as it is mapped in the parent Table list
     """
-    def __init__(self, num_columns: int, parent_key: int, pr_key: int):
+    def __init__(self, num_columns: int, parent_key: int, pr_key: int, parent_path):
         self.table_key = parent_key
         self.num_columns = num_columns
         self.key = pr_key
         self.num_tail_pages = 0
         self.num_tail_records = 0
+        self.table_path = parent_path
+        self.page_range_path = f"{parent_path}/pageRange{self.key}"  # write name of path for the page range
+        os.mkdir(self.page_range_path)  # make the directory
+
+        
         # Default page names
         default_names = ["INDIRECTION","RID", "TIME", "SCHEMA", "KEY"]
         # Generate additional page names
         for i in range(num_columns - 1):
             default_names.append(f"data_column {i + 1}")
-        self.base_page = [[Page(name) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
+        self.base_page = [[Page(name, self.page_range_path) for name in default_names] for _ in range(PAGE_RANGE_SIZE)]
         # self.tail_page = [None] * PAGE_RANGE_SIZE
         tail_names = ["Tail_INDIRECTION","Tail_RID", "Tail_TIME", "Tail_SCHEMA", "Tail_KEY"]  # Template for generating page names
         for i in range(self.num_columns - 1):
             tail_names.append(f"Tail_data_column {i + 1}")
         
-        self.tail_page = [[Page(name) for name in tail_names] for _ in range(PAGE_RANGE_SIZE)]
+        self.tail_page = [[Page(name, self.page_range_path) for name in tail_names] for _ in range(PAGE_RANGE_SIZE)]
+
+
+
         return None
 
 
@@ -256,7 +266,7 @@ class Table:
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-    def __init__(self, name, num_columns, key, path=None, bufferpool=None):
+    def __init__(self, name, num_columns, key, path, bufferpool=None):
         self.name = name  # set name of table
         self.table_path = path
         self.key = key  # set table key
@@ -273,7 +283,7 @@ class Table:
         self.page_directory = {}  # dictionary given a record key, it should return the page address/location
         self.num_page_ranges = 0
         self.page_range_data = {}
-        self.page_range = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0)]
+        self.page_range = [PageRange(num_columns=num_columns, parent_key=key, pr_key=0, parent_path = path)]
         self.base_page = []  # list of Base page objects
         self.tail_page = []  # list of Tail page objects
         self.index = Index(self)
@@ -327,7 +337,6 @@ class Table:
         return returnPage
     
 
-    # this function assumes that a prior tail record does not exist
     def setTailPage(self, tailPage, insertRecord, colsList):
         tailRID = uuid4()                                                                            # generate a unique RID for a tail record
         newTailRecord = Record(tailRID, insertRecord.schema_encoding, insertRecord.key, colsList)    # create new record object 
@@ -348,9 +357,6 @@ class Table:
         except:
             print("Tail setting failed")                # complete page setting failure 
             return False                                #return false
-
-    def keyUpdate(self):
-        pass
 
     def getTailPage(self):
         if(self.tail_page == []):                       # if tail pages do not exist

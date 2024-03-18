@@ -1,17 +1,32 @@
 from lstore.logger import logger
 from lstore.config import *
-
+import threading
 
 
 class Page:
     # each page should only store 256 records
 
-    def __init__(self, directoryID: str):
+    def __init__(self, directoryID: str, rangePath):
         self.directoryID = directoryID          # page identifier: positive for tail pages; negative for base
         self.num_records = 0                    # count total records
         self.record_metadata = {}               # dictionary of records
         self.data = bytearray(PAGE_SIZE)        # page size/data
         self.nextDataBlock = 0                  # page index for next empty area of page
+        self.range_path = rangePath
+        self.file_path = f"{rangePath}/{self.directoryID}"  # write name of path for the page
+
+    def increment(self):
+        self.num_records += 1
+        if self.num_records >= MAX_RECORDS:
+            thread = threading.Thread(target=self.save_to_disk)
+            thread.start()
+            print(f"Counter reached {MAX_RECORDS}. Saving object to {self.file_path} in a new thread.")
+
+    def save_to_disk(self):
+        # Open the file in binary write mode
+        with open(self.file_path, 'wb') as file:
+            file.write(self.data)
+        print(f"Data successfully saved to {self.file_path}.")
 
     def has_capacity(self):                     # check remain capacity of page
         return PAGE_SIZE-self.nextDataBlock     # return total remaining capacity
@@ -24,7 +39,7 @@ class Page:
         self.data[start_index] = value
 
         self.nextDataBlock += 1
-        self.num_records += 1
+        self.increment()
         return start_index                                                  # return the start and last index
 
     def fill_bytearray_by_index(self,start, end, new_value):
@@ -36,7 +51,7 @@ class Page:
             self.data[i] = new_value
 
         self.nextDataBlock = end
-        self.num_records += 1
+        self.increment()
         return None
 
     def read_bytearray(self,recordObj):                                    # read data inside page bytearray()
@@ -53,7 +68,7 @@ class Page:
         returnData = []
         # start_index = recordObj.getStart()                                              # get the start index of data inside bytearray
         # last_index = recordObj.getEnd()                                                 # get the end index of data inside bytearray
-        returnval = bytearr[loc] 
+        returnval = recordObj.columns[loc] 
 
         return returnval                                                               # return the returnData list
 
@@ -63,11 +78,10 @@ class Page:
     
     def space_allocation(self, byte_allocation:int):
 
-        self.num_records += 1
         # Find the start and end indexes
         start_index = self.nextDataBlock
         self.nextDataBlock += byte_allocation
-
+        self.increment()
         return start_index, self.nextDataBlock
 
     def store_hex_in_bytearray(self, hex_value:hex):
@@ -87,9 +101,8 @@ class Page:
         # Fill the beginning of the bytearray with the hex bytes
         result[start:bytes_to_fill] = hex_bytes[:bytes_to_fill]
 
-        self.num_records += 1
         self.nextDataBlock = bytes_to_fill
-
+        self.increment()
         return start, self.nextDataBlock
     
     def store_hex_in_bytearray_by_index(self, hex_value:hex, start, end):
@@ -141,11 +154,12 @@ class Page:
 
         self.nextDataBlock = int((len(number_str)/2)+1)
         
-        self.num_records += 1
+        self.increment()
 
 
         return start, self.nextDataBlock
-    
+
+
     # checks capacity of page
     # writes to bytearray
     # update page dirctionary with metadata
