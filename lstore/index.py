@@ -3,6 +3,7 @@ A data strucutre holding indices for various columns of a table. Key column shou
 """
 import os 
 import pickle
+import threading
 
 class Index:
 
@@ -10,10 +11,11 @@ class Index:
         self.table = table  # Storing the table object for later use
         # One index for each table. All our empty initially.
         self.indices = [None] * table.num_columns
+        self.key_to_base_records = {}
         self.rid_to_tail_records = {} 
+        self.lock = threading.Lock()
         #self.root_path = root_path
         return None
-
 
     """
     # returns the location of all records with the given value on column "column"
@@ -49,7 +51,11 @@ class Index:
             # If the key doesn't exist, create an index for it
             return self.create_index(key)'''
         # Add the record to the index for the specified key
-        self.indices[key] = record
+        if self.indices[1] == None:
+            self.indices[1] = {}
+        self.indices[1][key] = key
+
+        self.key_to_base_records[key] = record
         return True  # Successfully inserted the record
 
     def insert_tailrec(self, record):
@@ -68,9 +74,9 @@ class Index:
 
     def lookup(self, key):
         # Check if the key exists in the indices dictionary
-        if key in self.indices:
+        if key in self.indices[1]:
             # Return the record associated with the key
-            return self.indices[key]
+            return self.key_to_base_records[key]
         return None  # Key not found in the index
     
     def locate_range(self, begin, end, column):
@@ -88,6 +94,7 @@ class Index:
     """
 
     def create_index(self, column_number):
+        # self.lock.acquire()  it takes really long to run when i acquire a lock on create_index
         if column_number not in self.indices:
             # If no index exists, initialize a new index for the column
             self.indices[column_number] = {}  # You can use any appropriate data structure like a dictionary or a B-Tree
@@ -110,6 +117,7 @@ class Index:
         else:
             # If an index already exists for the column, return False to indicate that index creation failed
             return False
+         # self.lock.release()
 
     """
     #  Drop index of specific column

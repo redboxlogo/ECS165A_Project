@@ -10,6 +10,10 @@ db = Database()
 #   The second argument is the number of columns
 #   The third argument is determining the which columns will be primay key
 #       Here the first column would be student id and primary key
+db.open('./ECS165')
+
+
+
 grades_table = db.create_table('Grades', 5, 0)
 
 # create a query class for the grades table
@@ -82,6 +86,7 @@ for c in range(0, grades_table.num_columns):
         result = query.sum(keys[r[0]], keys[r[1]], c)
         if column_sum != result:
             print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
+            result = query.sum(keys[r[0]], keys[r[1]], c)
         else:
             pass
             # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)

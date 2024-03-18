@@ -3,6 +3,7 @@ from lstore.table import *
 import os
 import pickle
 import time
+from threading import Lock
 
 BUFFERPOOL_FRAME_COUNT = 100
 
@@ -14,13 +15,15 @@ class Bufferpool():
         self.frame_directory = {}  # directory for frame is set to dictionary
         self.frame_count = 0  # frame count
         self.path2root = path2root
+        self.data_lock = Lock()
 
     '''
     passes frames to frame directory
     '''
+
     def frame_to_dict(self, table_name, page_range, bpage, brecord, frame_index):  # maybe add in page range?
         frame_key = (table_name, page_range, bpage, brecord)
-        self.frame_directory[frame_key] = frame_index 
+        self.frame_directory[frame_key] = frame_index
         self.frames[frame_index].tuple_key = frame_key
 
         if self.frame_count < BUFFERPOOL_FRAME_COUNT:
@@ -31,6 +34,7 @@ class Bufferpool():
     this function checks if our bufferpool is full
     returns True if full, returns False if not
     '''
+
     def full(self):
         if self.frame_count == BUFFERPOOL_FRAME_COUNT:
             return True
@@ -38,8 +42,9 @@ class Bufferpool():
             return False
 
     def fetch_page(self, table_name, page_id):
+        self.data_lock.acquire()
         frame_key = (table_name, page_id)
-        
+
         # If the page is already in the buffer, return it and update LRU info
         if frame_key in self.frame_directory:
             frame_index = self.frame_directory[frame_key]
@@ -78,6 +83,7 @@ class Bufferpool():
                 self.frame_directory[frame_key] = len(self.frames) - 1
 
             new_frame.unpin()  # Unpin the new frame right before returning
+            self.data_lock.release()
             return new_frame
 
         except FileNotFoundError:
@@ -86,8 +92,8 @@ class Bufferpool():
             print(f"An error occurred while fetching page {page_id} for table {table_name}: {e}")
             return None  # Explicitly return None to indicate an error
 
-
     def evict_page(self):
+        self.data_lock.acquire()
         LUP = self.frames[0]  # last used page as first page in list of frames
         index = 0  # index of page
         frame_index = 0  # index of frame
@@ -117,6 +123,7 @@ class Bufferpool():
 
         frame_key = LUP.tuple_key  # update the frame key
         del self.frame_directory[frame_key]  # release memory associated with the frame key
+        self.data_lock.release()
 
         return frame_index  # returns index of frame that was evicted
 
@@ -163,17 +170,6 @@ class Bufferpool():
 
         return frame_index  # returns index of frame that was evicted
 
-    def commit_page(self, index):  # passes in index of frame, commits the page to disk
-        current_frame = self.frames[index]  # identify frame we wish to commit
-        all_cols = current_frame.cols  # get all column data
-        path2page = current_frame.disk_path2page  # get the path to page on disk for the frame
-        if current_frame.dirty:  # if the frame is dirty
-            write_to_disk(path2page, all_cols)  # write them to disk
-
-    def commit_frames(self):  # commits all frames when closing the database
-        for index in range(len(self.frames)):  # iterate through all frames
-            if self.frames[index].dirty:  # if frame is dirty
-                self.commit_page(index)  # commit it to disk
 
 class Frame():
 
@@ -196,6 +192,7 @@ class Frame():
     setter function for dirty page
     setter function for dirty page
     '''
+
     def set_dirty(self):
         self.dirty = True
         return True
@@ -203,29 +200,32 @@ class Frame():
     '''
     unset function for dirty page
     '''
+
     def unset_dirty(self):
         self.dirty = False
-        return True
         return True
 
     '''
     unset function for dirty page
     '''
+
     def unset_dirty(self):
         self.dirty = False
         return True
-    
+
     '''
     indicates the frame is pinned
     '''
+
     def pin(self):
         self.pinned = True
         return True
         return True
-        
+
     '''
     indicates the frame has been unpinned
     '''
+
     def unpin(self):
         self.pinned = False
         return True
