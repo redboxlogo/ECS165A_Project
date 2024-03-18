@@ -68,3 +68,10 @@ class ReadWriteLock:
         self.ready_lock.acquire()
         self.writers = False
         self.ready_lock.release()
+
+
+    def release_all_locks(self):
+        self.ready_lock.acquire()
+        self.readers = 0
+        self.writers = False
+        self.ready_lock.release()
