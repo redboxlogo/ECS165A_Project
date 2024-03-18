@@ -80,6 +80,11 @@ class Database:
 
             index_file = open(f"{get_table.table_path}/indices.pkl", "wb")  # save indexes as pkl file
 
+            for index in get_table.index.indices:
+                # print(index)
+                if index is not None:
+                    index.lock = None  # AttributeError: 'dict' object has no attribute 'lock'
+
             pickle.dump(get_table.index, index_file)  # load in index data from get_table into index_file
             index_file.close()  # close the index file
 
